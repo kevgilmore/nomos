@@ -43,11 +43,13 @@ function ThemeToggle() {
   React.useEffect(() => {
     const nextDark = document.documentElement.classList.contains("dark");
     setDark(nextDark);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", nextDark ? "#19171f" : "#ffffff");
   }, []);
   function toggle() {
     const nextDark = !dark;
     setDark(nextDark);
     document.documentElement.classList.toggle("dark", nextDark);
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", nextDark ? "#19171f" : "#ffffff");
     window.localStorage.setItem("nomos-theme", nextDark ? "dark" : "light");
     document.cookie = `nomos-theme=${nextDark ? "dark" : "light"}; Path=/; Max-Age=31536000; SameSite=Lax`;
   }
@@ -247,7 +249,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
 
   const compactMobileNavigation = navigation.length <= 5;
 
-  return <div className="min-h-dvh lg:grid lg:grid-cols-[96px_1fr]">
+  return <div className="min-h-dvh bg-[var(--card)] lg:grid lg:grid-cols-[96px_1fr]">
     <aside className="fixed inset-x-0 bottom-0 z-40 bg-[color-mix(in_srgb,var(--card)_95%,transparent)] px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:inset-y-0 lg:left-0 lg:right-auto lg:w-24 lg:px-2 lg:pb-0">
       <div className="hidden h-18 place-items-center lg:grid"><Link href={homeUrl} aria-label="Nomos home">{logo}</Link></div>
       <nav aria-label="Primary navigation" tabIndex={compactMobileNavigation ? undefined : 0} className={`flex w-full flex-nowrap items-stretch overflow-x-auto overscroll-x-contain px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:block lg:space-y-2 lg:overflow-visible lg:px-0 lg:pt-5 ${compactMobileNavigation ? "gap-0" : "gap-1"}`}>
@@ -255,7 +257,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
       </nav>
     </aside>
     <div className="min-w-0 bg-[var(--card)] lg:col-start-2">
-      <header className="sticky top-0 z-30 flex h-18 items-center bg-[color-mix(in_srgb,var(--card)_90%,transparent)] px-4 backdrop-blur md:px-7">
+      <header className="sticky top-0 z-30 flex h-[calc(4.5rem+env(safe-area-inset-top))] items-center bg-[color-mix(in_srgb,var(--card)_90%,transparent)] pl-5 pr-4 pt-[env(safe-area-inset-top)] backdrop-blur md:px-7 lg:h-18 lg:pt-0">
         <h1 className="min-w-0 flex-1 truncate text-2xl font-semibold tracking-[-.02em] md:text-xl">{title}</h1>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <ThemeToggle />

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
 import { AppShell } from "@/components/app-shell";
 import { appConfig } from "@/lib/app-config";
@@ -15,6 +15,14 @@ const defaultTitle = getDefaultTitle(appConfig.name, appConfig.brandName);
 export const metadata: Metadata = {
   title: { default: defaultTitle, template: `%s · ${defaultTitle}` },
   description: appConfig.description,
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  colorScheme: "dark light",
+  themeColor: "#19171f",
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

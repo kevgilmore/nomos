@@ -1,8 +1,16 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Figtree } from "next/font/google";
 import "./globals.css";
 
 export const metadata: Metadata = { title: "Nomos", description: "Your Nomos home." };
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  colorScheme: "dark",
+  themeColor: "#19171f",
+};
 
 const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree", display: "swap" });
 
