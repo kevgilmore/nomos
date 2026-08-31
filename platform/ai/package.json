@@ -1,0 +1,15 @@
+{
+  "name": "@nomos/ai",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./local": "./src/local.ts",
+    "./server": "./src/server.ts",
+    "./types": "./src/types.ts"
+  },
+  "dependencies": {
+    "@nomos/db": "workspace:*"
+  }
+}

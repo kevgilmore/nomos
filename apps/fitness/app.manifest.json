@@ -1,0 +1,7 @@
+{
+  "slug": "fitness",
+  "name": "Fitness",
+  "href": "http://localhost:3003",
+  "icon": "fitness",
+  "discoverable": true
+}

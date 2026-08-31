@@ -1,0 +1,7 @@
+{
+  "slug": "home",
+  "name": "Home",
+  "href": "http://localhost:3000",
+  "icon": "app",
+  "discoverable": true
+}

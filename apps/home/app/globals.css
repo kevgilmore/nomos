@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@source "../../../platform/ui/src";
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  color-scheme: light;
+  --background: #f7f6fa; --foreground: #19171f; --card: #ffffff; --card-foreground: #19171f;
+  --popover: #ffffff; --popover-foreground: #19171f; --muted: #efedf3; --muted-foreground: #6d6878;
+  --border: #e1dee7; --input: #e1dee7; --primary: #33254f; --primary-foreground: #ffffff;
+  --secondary: #efedf3; --secondary-foreground: #19171f; --accent: #ebe5f7; --accent-foreground: #302047; --ring: #7655a6;
+  --radius: .875rem;
+}
+.dark {
+  color-scheme: dark;
+  --background: #111014; --foreground: #f4f1f8; --card: #19171f; --card-foreground: #f4f1f8;
+  --popover: #19171f; --popover-foreground: #f4f1f8; --muted: #24212b; --muted-foreground: #aaa3b5;
+  --border: #302c39; --input: #383241; --primary: #7655a6; --primary-foreground: #ffffff;
+  --secondary: #24212b; --secondary-foreground: #f4f1f8; --accent: #292333; --accent-foreground: #f0eaf8; --ring: #a78bda;
+}
+* { box-sizing: border-box; border-color: var(--border); }
+html { background: var(--background); }
+body { margin: 0; background: var(--background); color: var(--foreground); font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }
+button, a { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent); outline-offset: 2px; }
+.topnav-icon:focus-visible { outline: none; }
+.nomos-home-search:focus-visible { outline: none; }
+.topnav-icon { width: 2.5rem; height: 2.5rem; min-height: 2.5rem; display: grid; flex-shrink: 0; place-items: center; background: transparent !important; transition: none !important; }
+.topnav-icon:hover, .topnav-icon[aria-expanded="true"] { background: var(--accent) !important; }
+.topnav-icon:focus-visible { outline: none !important; box-shadow: none !important; border-color: transparent !important; }
+.topnav-icon { border-color: transparent !important; box-shadow: none !important; }
+.topnav-icon > span { width: 2.25rem; height: 2.25rem; }
+.topnav-icon > svg { width: 1.225rem !important; height: 1.225rem !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }

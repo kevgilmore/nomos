@@ -1,0 +1,24 @@
+{
+  "name": "nomos",
+  "private": true,
+  "packageManager": "pnpm@11.24.0",
+  "bin": {
+    "nomos": "./nomos/cli.mjs"
+  },
+  "scripts": {
+    "nomos": "node nomos/cli.mjs",
+    "create:app": "node .agents/skills/new-app/scripts/create-app.mjs",
+    "sync:apps": "node .agents/skills/new-app/scripts/sync-app-registry.mjs",
+    "dev": "node nomos/cli.mjs dev",
+    "dev:fitness": "pnpm --filter @nomos/fitness dev --port 3003",
+    "dev:all": "node nomos/cli.mjs dev",
+    "build": "pnpm --filter @nomos/fitness build",
+    "build:all": "pnpm --recursive --if-present build",
+    "build:hosting": "node scripts/build-hosting.mjs",
+    "lint": "pnpm --recursive --if-present lint",
+    "typecheck": "pnpm --recursive --if-present typecheck"
+  },
+  "dependencies": {
+    "firebase": "^12.18.0"
+  }
+}

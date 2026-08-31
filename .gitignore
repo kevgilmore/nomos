@@ -1,0 +1,23 @@
+.env
+.env.*
+!.env.example
+
+# Dependencies in any workspace or nested app.
+**/node_modules/
+
+# Framework output, deployment output, and generated build artifacts.
+**/.next/
+**/.next-dev/
+**/.next-production/
+**/dist/
+**/out/
+**/build/
+**/coverage/
+**/.turbo/
+**/.cache/
+*.tsbuildinfo
+
+.nomos-dev
+.nomos-local-auth.json*
+functions/src/db.ts
+functions/lib/

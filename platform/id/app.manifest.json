@@ -1,0 +1,7 @@
+{
+  "slug": "id",
+  "name": "ID",
+  "href": "http://localhost:3001",
+  "icon": "app",
+  "discoverable": false
+}

@@ -1,0 +1,24 @@
+{
+  "projects": {
+    "default": "nomos-2aafe"
+  },
+  "targets": {
+    "nomos-2aafe": {
+      "hosting": {
+        "home": [
+          "nomos-home"
+        ],
+        "fitness": [
+          "nomos-fitness"
+        ],
+        "default": [
+          "nomos-2aafe"
+        ],
+        "id": [
+          "nomos-id"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

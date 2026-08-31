@@ -1,0 +1,4 @@
+export type HevySet = { index: number; type: "normal" | "warmup" | "dropset" | "failure"; weight_kg: number | null; reps: number | null; distance_meters: number | null; duration_seconds: number | null; custom_metric: number | null; rep_range?: { start: number | null; end: number | null } | null };
+export type HevyExercise = { index: number; title: string; notes: string | null; exercise_template_id: string; superset_id: number | null; sets: HevySet[]; rest_seconds: number };
+export type HevyRoutine = { id: string; title: string; folder_id: number; notes?: string | null; updated_at: string; created_at: string; exercises: HevyExercise[] };
+export type HevyWorkout = { id: string; title: string; description: string | null; start_time: string; end_time: string; updated_at: string; created_at: string; exercises: HevyExercise[] };

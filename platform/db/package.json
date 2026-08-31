@@ -1,0 +1,16 @@
+{
+  "name": "@nomos/db",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./admin": {
+      "types": "./src/admin.d.ts",
+      "default": "./src/admin.mjs"
+    }
+  },
+  "dependencies": {
+    "firebase": "^12.18.0",
+    "firebase-admin": "^13.5.0"
+  }
+}

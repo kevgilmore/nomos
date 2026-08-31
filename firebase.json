@@ -1,0 +1,70 @@
+{
+  "functions": {
+    "source": "functions",
+    "runtime": "nodejs20",
+    "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+  },
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "Nomos",
+        "supportEmail": "kgilmore.me@gmail.com",
+          "authorizedRedirectUris": [
+            "https://id.nomos.codes/__/auth/handler",
+          "https://nomos-2aafe.firebaseapp.com/__/auth/handler"
+        ]
+      }
+    }
+  },
+  "firestore": { "rules": "firestore.rules" },
+  "storage": { "rules": "storage.rules" },
+  "hosting": [
+    {
+      "target": "id",
+      "public": "platform/id/out",
+      "cleanUrls": true,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "headers": [{ "source": "**/*.html", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }],
+      "rewrites": [
+        { "source": "/api/auth/**", "function": { "functionId": "authApi", "region": "europe-west2" } },
+        { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } }
+      ]
+    },
+    {
+      "target": "default",
+      "public": "firebase-empty",
+      "cleanUrls": true,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
+    },
+    {
+      "target": "home",
+      "public": "firebase-empty",
+      "cleanUrls": true,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/auth/**", "function": { "functionId": "authApi", "region": "europe-west2" } },
+        { "source": "**", "function": { "functionId": "authGate", "region": "europe-west2" } }
+      ]
+    },
+    {
+      "target": "fitness",
+      "public": "apps/fitness/out",
+      "cleanUrls": false,
+      "trailingSlash": true,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/data/**", "function": { "functionId": "dataApi", "region": "europe-west2" } },
+        {
+          "source": "/api/hevy/**",
+          "function": { "functionId": "fitnessApi", "region": "europe-west2" }
+        },
+        {
+          "source": "/api/auth/**",
+          "function": { "functionId": "authApi", "region": "europe-west2" }
+        }
+      ]
+    }
+  ]
+}
