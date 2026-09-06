@@ -33,7 +33,7 @@ export function GoogleSignInButton({ returnTo }: { returnTo: string }) {
       // session endpoint is a Firebase Hosting rewrite and is not available
       // from the local Next server.
       if (isLocalDevelopmentHost(window.location.hostname)) {
-        for (const name of ["nomos_home_session", "nomos_fitness_session", "nomos_base_session"]) {
+        for (const name of ["nomos_home_session", "nomos_fitness_session", "nomos_base_session", "nomos_template_session", "nomos_finance_session", "nomos_goals_session", "nomos_time_session", "nomos_local_session"]) {
           document.cookie = `${name}=local-development; Path=/; Max-Age=604800; SameSite=Lax`;
         }
         window.location.assign(returnTo);
@@ -47,5 +47,5 @@ export function GoogleSignInButton({ returnTo }: { returnTo: string }) {
       setWorking(false);
     }
   }
-  return <div className="space-y-3"><button type="button" onClick={signIn} disabled={working} className="h-11 w-full rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] disabled:cursor-wait disabled:opacity-60">{working ? "Signing in…" : "Continue with Google"}</button>{error && <p role="alert" className="text-sm text-red-200">{error}</p>}</div>;
+  return <div className="space-y-3"><button type="button" onClick={signIn} disabled={working} className="h-11 w-full cursor-pointer rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] disabled:cursor-wait disabled:opacity-60">{working ? "Signing in…" : "Continue with Google"}</button>{error && <p role="alert" className="text-sm text-red-200">{error}</p>}</div>;
 }

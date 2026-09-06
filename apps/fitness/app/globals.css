@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @source "../../../platform/ui/src";
+html body { font-family: Figtree, sans-serif !important; }
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -22,18 +23,6 @@ html, body { min-height: 100%; background: var(--card); }
 body { min-height: 100dvh; margin: 0; color: var(--foreground); font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }
 button, a { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent); outline-offset: 2px; }
-.topnav-icon:focus-visible { outline: none; }
-.topnav-icon { width: 2.5rem; height: 2.5rem; min-height: 2.5rem; background: transparent !important; transition: none !important; }
-.topnav-icon:hover, .topnav-icon[aria-expanded="true"] { background: var(--accent) !important; }
-.topnav-icon { display: grid; flex-shrink: 0; place-items: center; }
-.topnav-icon + * { flex-shrink: 0; }
-header h1 { min-width: 0; flex: 1; }
-.topnav-icon > span { width: 2.25rem; height: 2.25rem; }
-.topnav-icon { border-color: transparent !important; box-shadow: none !important; }
-.topnav-icon > svg { width: 1.225rem !important; height: 1.225rem !important; }
-button.topnav-icon > svg { width: 1.225rem !important; height: 1.225rem !important; transform: none; }
-.topnav-icon:focus-visible { outline: none !important; box-shadow: none !important; border-color: transparent !important; }
-.assistant-prompt:focus-visible { outline: none; }
 section[aria-label="AI agent"] button > [role="progressbar"], section[aria-label="AI agent"] button [role="progressbar"] { display: none !important; height: 0 !important; margin: 0 !important; visibility: hidden !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }
 .eyebrow { font-size: .68rem; font-weight: 700; letter-spacing: .16em; color: var(--muted-foreground); }
@@ -48,3 +37,5 @@ section[aria-label="AI agent"] button > [role="progressbar"], section[aria-label
 .icon-button:hover { background: var(--muted); color: var(--foreground); }
 .icon-button:disabled { opacity: .25; pointer-events: none; }
 .icon-button svg { width: 1rem; height: 1rem; }
+button:not(:disabled), [role="button"]:not([aria-disabled="true"]) { cursor: pointer; }
+button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }

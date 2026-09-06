@@ -7,7 +7,8 @@ import { Blocks, LogOut, Moon, PanelRightOpen, Search, Sparkles, Sun } from "luc
 import { Avatar, AvatarFallback, Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "./index";
 import { AssistantPanel } from "./assistant-panel";
 import { signOutFirebaseUser } from "@nomos/auth/client";
-import { isLocalDevelopmentHost, LOCAL_DEV_USER, LOCAL_SESSION_COOKIES, NOMOS_URLS } from "@nomos/auth";
+import { getLocalSessionCookie, isLocalDevelopmentHost, LOCAL_DEV_USER, NOMOS_URLS } from "@nomos/auth";
+import { NomosToastViewport, showNomosToast } from "./nomos-toast";
 
 export type ShellNavItem = { slug: string; label: string; href: string; icon: React.ElementType };
 export type ShellApp = { slug: string; label: string; href: string; icon?: React.ElementType };
@@ -54,10 +55,10 @@ function ThemeToggle() {
     document.cookie = `nomos-theme=${nextDark ? "dark" : "light"}; Path=/; Max-Age=31536000; SameSite=Lax`;
   }
   const Icon = dark ? Sun : Moon;
-  return <Button variant="ghost" size="icon" onClick={toggle} aria-label={`Switch to ${dark ? "light" : "dark"} mode`} title={`Switch to ${dark ? "light" : "dark"} mode`} className="topnav-icon rounded-full hover:bg-[var(--accent)]"><Icon /></Button>;
+  return <Button variant="ghost" size="icon" onClick={toggle} aria-label={`Switch to ${dark ? "light" : "dark"} mode`} title={`Switch to ${dark ? "light" : "dark"} mode`} className="topnav-icon grid size-10 min-h-10 place-items-center rounded-full border-0 bg-transparent transition-none shadow-none hover:bg-[var(--accent)] focus-visible:!outline-none focus-visible:!ring-0"><Icon /></Button>;
 }
 
-export function NomosShell({ children, title, homeUrl, logo, navigation = [], apps = [], assistantPage, profileImage = "/pp.png", appSlug }: { children: React.ReactNode; title: string; homeUrl: string; logo: React.ReactNode; navigation?: ShellNavItem[]; apps?: ShellApp[]; assistantPage?: string; profileImage?: string; appSlug?: keyof typeof LOCAL_SESSION_COOKIES }) {
+export function NomosShell({ children, title, homeUrl, logo, navigation = [], apps = [], assistantPage, assistantContextStorageKey, assistantProposalStorageKey, profileImage = "/pp.png", appSlug, showNavigation = true }: { children: React.ReactNode; title: string; homeUrl: string; logo: React.ReactNode; navigation?: ShellNavItem[]; apps?: ShellApp[]; assistantPage?: string; assistantContextStorageKey?: string; assistantProposalStorageKey?: string; profileImage?: string; appSlug?: string; showNavigation?: boolean }) {
   const pathname = usePathname() ?? "";
   const [launcherOpen, setLauncherOpen] = React.useState(false);
   const [launcherQuery, setLauncherQuery] = React.useState("");
@@ -65,7 +66,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
   const [user, setUser] = React.useState<ShellUser | null>(() => readStoredSessionUser());
   const [authChecked, setAuthChecked] = React.useState(() => Boolean(readStoredSessionUser()));
   const launcherSearchRef = React.useRef<HTMLInputElement>(null);
-  const visibleApps = apps.filter((app) => app.label.toLowerCase().includes(launcherQuery.trim().toLowerCase()));
+  const visibleApps = apps.filter((app) => app.slug !== appSlug && (app.slug !== "template" || launcherQuery.trim().length > 0) && app.label.toLowerCase().includes(launcherQuery.trim().toLowerCase()));
 
   React.useEffect(() => {
     let clickId = 0;
@@ -84,6 +85,9 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
     window.fetch = async (input, init) => {
       const request = new Request(input, init);
       const sameOrigin = new URL(request.url).origin === window.location.origin;
+      const requestUrl = new URL(request.url);
+      const isApiRequest = sameOrigin && requestUrl.pathname.startsWith("/api/");
+      const isHevyRequest = isApiRequest && requestUrl.pathname.startsWith("/api/hevy/");
       const isNavigationRequest = sameOrigin && (request.url.includes("/index.txt") || request.headers.has("RSC"));
       const isAuthRequest = sameOrigin && request.url.includes("/api/auth/");
       if (isNavigationRequest || isAuthRequest) {
@@ -97,6 +101,18 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
       }
       try {
         const response = await originalFetch(input, init);
+        if (isApiRequest && !response.ok) {
+          let detail = "";
+          try {
+            const body = await response.clone().json() as { error?: unknown };
+            detail = typeof body.error === "string" ? body.error : "";
+          } catch { /* The endpoint may return a non-JSON error page. */ }
+          showNomosToast({ tone: "error", message: `${detail || (isHevyRequest ? "Hevy request failed" : "Request failed")} (${response.status})` });
+        } else if (isHevyRequest) {
+          const action = request.method === "GET" ? "Loaded" : request.method === "POST" ? "Updated" : request.method === "PUT" ? "Updated" : request.method === "DELETE" ? "Deleted" : "Completed";
+          const subject = requestUrl.pathname.includes("workouts") ? "Hevy workouts" : requestUrl.pathname.includes("routines") ? "Hevy routines" : "Hevy";
+          showNomosToast({ tone: "success", message: `${action} ${subject}` });
+        }
         if (isNavigationRequest || isAuthRequest) {
           console.info("[Nomos diagnostics] fetch end", {
             clickId: lastInternalClick?.id ?? null,
@@ -109,6 +125,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
         }
         return response;
       } catch (error) {
+        if (isApiRequest) showNomosToast({ tone: "error", message: `${isHevyRequest ? "Hevy request failed" : "Request failed"}: ${error instanceof Error ? error.message : "Network error"}` });
         if (isNavigationRequest || isAuthRequest) console.error("[Nomos diagnostics] fetch error", { clickId: lastInternalClick?.id ?? null, url: request.url, error });
         throw error;
       }
@@ -161,8 +178,50 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [assistantPage, launcherOpen]);
   React.useEffect(() => {
+    if (!assistantOpen || window.matchMedia("(min-width: 1280px)").matches) return;
+    const body = document.body;
+    const documentElement = document.documentElement;
+    const scrollY = window.scrollY;
+    const scrollbarWidth = window.innerWidth - documentElement.clientWidth;
+    const previous = {
+      bodyPosition: body.style.position,
+      bodyTop: body.style.top,
+      bodyLeft: body.style.left,
+      bodyRight: body.style.right,
+      bodyWidth: body.style.width,
+      bodyOverflow: body.style.overflow,
+      bodyPaddingRight: body.style.paddingRight,
+      bodyOverscrollBehavior: body.style.overscrollBehavior,
+      documentOverflow: documentElement.style.overflow,
+      documentOverscrollBehavior: documentElement.style.overscrollBehavior,
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    body.style.overscrollBehavior = "none";
+    if (scrollbarWidth > 0) body.style.paddingRight = `${scrollbarWidth}px`;
+    documentElement.style.overflow = "hidden";
+    documentElement.style.overscrollBehavior = "none";
+    return () => {
+      body.style.position = previous.bodyPosition;
+      body.style.top = previous.bodyTop;
+      body.style.left = previous.bodyLeft;
+      body.style.right = previous.bodyRight;
+      body.style.width = previous.bodyWidth;
+      body.style.overflow = previous.bodyOverflow;
+      body.style.paddingRight = previous.bodyPaddingRight;
+      body.style.overscrollBehavior = previous.bodyOverscrollBehavior;
+      documentElement.style.overflow = previous.documentOverflow;
+      documentElement.style.overscrollBehavior = previous.documentOverscrollBehavior;
+      window.scrollTo(0, scrollY);
+    };
+  }, [assistantOpen]);
+  React.useEffect(() => {
     const local = isLocalDevelopmentHost(window.location.hostname);
-    const localCookieName = appSlug ? LOCAL_SESSION_COOKIES[appSlug] : window.location.port === "3003" ? LOCAL_SESSION_COOKIES.fitness : window.location.port === "3002" ? LOCAL_SESSION_COOKIES.base : LOCAL_SESSION_COOKIES.home;
+    const localCookieName = appSlug ? getLocalSessionCookie(appSlug) : window.location.port === "3003" ? getLocalSessionCookie("fitness") : window.location.port === "3002" ? getLocalSessionCookie("base") : getLocalSessionCookie("home");
     const localCookie = local ? document.cookie.split(";").some((cookie) => cookie.trim().startsWith(`${localCookieName}=`)) : false;
 
     console.info("[Nomos diagnostics] auth check start", {
@@ -194,7 +253,21 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
     }
 
     if (!clientSessionPromise) {
-      clientSessionPromise = fetch("/api/auth/session", { credentials: "include", cache: "no-store" }).then(async (response) => {
+      clientSessionPromise = (async () => {
+        const handoffCode = new URLSearchParams(window.location.search).get("nomosAuthHandoff");
+        if (handoffCode) {
+          const response = await fetch("/api/auth/session", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ handoffCode, returnTo: window.location.href.split("?")[0] }),
+          });
+          if (!response.ok) throw new Error("Sign-in handoff was not accepted");
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete("nomosAuthHandoff");
+          window.history.replaceState({}, "", cleanUrl.toString());
+        }
+        return fetch("/api/auth/session", { credentials: "include", cache: "no-store" }).then(async (response) => {
         console.info("[Nomos diagnostics] auth check response", { status: response.status, ok: response.ok, url: response.url, contentType: response.headers.get("content-type") });
         if (response.ok) {
           const data = await response.json();
@@ -209,7 +282,8 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
         console.error("[Nomos diagnostics] auth check failed; redirecting to sign-in", { error });
         window.location.assign(`${NOMOS_URLS.id}/sign-in?returnTo=${encodeURIComponent(window.location.href)}`);
         return null;
-      });
+        });
+      })();
     } else {
       console.info("[Nomos diagnostics] auth check already in flight");
     }
@@ -224,7 +298,14 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
     });
   }, []);
 
-  function selectApp(app: ShellApp) { setLauncherOpen(false); window.open(app.href, "_blank", "noopener,noreferrer"); }
+  function selectApp(app: ShellApp) {
+    setLauncherOpen(false);
+    if (window.matchMedia("(max-width: 1279px)").matches) {
+      window.location.assign(app.href);
+      return;
+    }
+    window.open(app.href, "_blank", "noopener,noreferrer");
+  }
   async function signOut() {
     try {
       const local = isLocalDevelopmentHost(window.location.hostname);
@@ -233,7 +314,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
       await fetch(endpoint, { method: "POST", credentials: "include" });
       await signOutFirebaseUser();
       if (local) {
-        const localCookieName = appSlug ? LOCAL_SESSION_COOKIES[appSlug] : window.location.port === "3003" ? LOCAL_SESSION_COOKIES.fitness : window.location.port === "3002" ? LOCAL_SESSION_COOKIES.base : LOCAL_SESSION_COOKIES.home;
+        const localCookieName = appSlug ? getLocalSessionCookie(appSlug) : window.location.port === "3003" ? getLocalSessionCookie("fitness") : window.location.port === "3002" ? getLocalSessionCookie("base") : getLocalSessionCookie("home");
         document.cookie = `${localCookieName}=; Path=/; Max-Age=0; SameSite=Lax`;
       }
     } finally {
@@ -245,28 +326,29 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
     }
   }
 
-  if (!authChecked || !user) return <div className="grid min-h-dvh place-items-center bg-[var(--background)]" aria-busy="true"><p className="text-sm text-[var(--muted-foreground)]">Checking access…</p></div>;
+  if (!authChecked || !user) return <div className="grid min-h-dvh place-items-center bg-[var(--background)]" aria-busy="true"><p className="text-sm text-[var(--muted-foreground)]">Checking access…</p><NomosToastViewport /></div>;
 
   const compactMobileNavigation = navigation.length <= 5;
 
-  return <div className="min-h-dvh bg-[var(--card)] lg:grid lg:grid-cols-[96px_1fr]">
-    <aside className="fixed inset-x-0 bottom-0 z-40 bg-[color-mix(in_srgb,var(--card)_95%,transparent)] px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:inset-y-0 lg:left-0 lg:right-auto lg:w-24 lg:px-2 lg:pb-0">
+  return <div className={`min-h-dvh bg-[var(--card)] ${showNavigation ? "lg:grid lg:grid-cols-[96px_1fr]" : ""}`}>
+    {showNavigation && <aside className="fixed inset-x-0 bottom-0 z-40 bg-[color-mix(in_srgb,var(--card)_95%,transparent)] px-1 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:inset-y-0 lg:left-0 lg:right-auto lg:w-24 lg:px-2 lg:pb-0">
       <div className="hidden h-18 place-items-center lg:grid"><Link href={homeUrl} aria-label="Nomos home">{logo}</Link></div>
       <nav aria-label="Primary navigation" tabIndex={compactMobileNavigation ? undefined : 0} className={`flex w-full flex-nowrap items-stretch overflow-x-auto overscroll-x-contain px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:block lg:space-y-2 lg:overflow-visible lg:px-0 lg:pt-5 ${compactMobileNavigation ? "gap-0" : "gap-1"}`}>
         {navigation.map((item) => { const active = pathname.startsWith(`/${item.slug}`); const Icon = item.icon; return <Link key={item.slug} href={item.href} aria-current={active ? "page" : undefined} className={`group flex min-h-14 shrink-0 flex-col items-center justify-center gap-2 px-0.5 transition-colors lg:min-h-20 lg:w-full lg:gap-1.5 lg:px-1 lg:text-xs ${compactMobileNavigation ? "min-w-0 flex-1" : "w-16"} ${active ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"}`}><span className={`grid size-9 place-items-center rounded-xl transition-all lg:size-10 ${active ? "bg-[var(--primary)] text-[var(--primary-foreground)]" : "group-hover:bg-[var(--accent)]"}`}><Icon className="size-5 lg:size-[22px]" strokeWidth={active ? 2.25 : 1.8} aria-hidden="true" /></span><span className="hidden max-w-full truncate text-center leading-tight lg:block">{item.label}</span></Link>; })}
       </nav>
-    </aside>
-    <div className="min-w-0 bg-[var(--card)] lg:col-start-2">
+    </aside>}
+    <div className={`min-w-0 bg-[var(--card)] ${showNavigation ? "lg:col-start-2" : ""}`}>
       <header className="sticky top-0 z-30 flex h-[calc(4.5rem+env(safe-area-inset-top))] items-center bg-[color-mix(in_srgb,var(--card)_90%,transparent)] pl-5 pr-4 pt-[env(safe-area-inset-top)] backdrop-blur md:px-7 lg:h-18 lg:pt-0">
         <h1 className="min-w-0 flex-1 truncate text-2xl font-semibold tracking-[-.02em] md:text-xl">{title}</h1>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <ThemeToggle />
-          <DropdownMenu open={launcherOpen} onOpenChange={(open) => { setLauncherOpen(open); if (!open) setLauncherQuery(""); }}><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="topnav-icon rounded-full hover:bg-[var(--accent)]" aria-label="Open app launcher"><WaffleIcon /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-72 p-2"><DropdownMenuLabel className="flex items-center justify-between px-2 py-1.5"><span>Apps</span><kbd className="rounded border bg-[var(--background)] px-1.5 py-0.5 text-[10px] text-[var(--muted-foreground)]">Ctrl K</kbd></DropdownMenuLabel><div className="relative my-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" /><input ref={launcherSearchRef} aria-label="Search apps" value={launcherQuery} onChange={(event) => setLauncherQuery(event.target.value)} placeholder="Search apps" className="h-10 w-full rounded-lg border bg-[var(--card)] pl-9 pr-3 text-sm outline-none" /></div><DropdownMenuSeparator /><div className="grid grid-cols-3 gap-1">{visibleApps.map((app) => { const Icon = app.icon ?? Blocks; return <DropdownMenuItem key={app.slug} onSelect={() => selectApp(app)} className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 text-xs"><Icon className="size-5" /><span>{app.label}</span></DropdownMenuItem>; })}</div></DropdownMenuContent></DropdownMenu>
-          {authChecked && user && <DropdownMenu><DropdownMenuTrigger asChild><button className="topnav-icon grid size-11 place-items-center rounded-full" aria-label="Open profile menu"><Avatar className="size-11"><img src={profileImage || user.avatarUrl || "/pp.png"} alt={user.name} className="size-full object-cover" /><AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar></button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-60"><DropdownMenuLabel><span className="block">{user.name}</span><span className="block truncate font-normal text-[var(--muted-foreground)]">{user.email}</span></DropdownMenuLabel><DropdownMenuSeparator /><DropdownMenuItem className="cursor-pointer" onSelect={() => void signOut()}><LogOut />Sign out</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
+          <DropdownMenu modal={false} open={launcherOpen} onOpenChange={(open) => { setLauncherOpen(open); if (!open) setLauncherQuery(""); }}><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="topnav-icon grid size-10 min-h-10 place-items-center rounded-full border-0 bg-transparent transition-none shadow-none hover:bg-[var(--accent)] focus-visible:!outline-none focus-visible:!ring-0" aria-label="Open app launcher"><WaffleIcon /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-72 p-2"><DropdownMenuLabel className="flex items-center justify-between px-2 py-1.5"><span>Apps</span><kbd className="rounded border bg-[var(--background)] px-1.5 py-0.5 text-[10px] text-[var(--muted-foreground)]">Ctrl K</kbd></DropdownMenuLabel><div className="relative my-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[var(--muted-foreground)]" /><input ref={launcherSearchRef} aria-label="Search apps" value={launcherQuery} onChange={(event) => setLauncherQuery(event.target.value)} placeholder="Search apps" className="h-10 w-full rounded-lg border bg-[var(--card)] pl-9 pr-3 text-sm outline-none" /></div><DropdownMenuSeparator /><div className="grid grid-cols-3 gap-1">{visibleApps.map((app) => { const Icon = app.icon ?? Blocks; return <DropdownMenuItem key={app.slug} onSelect={() => selectApp(app)} className="flex min-h-20 cursor-pointer flex-col items-center justify-center gap-2 text-xs"><Icon className="size-5" /><span>{app.label}</span></DropdownMenuItem>; })}</div></DropdownMenuContent></DropdownMenu>
+          {authChecked && user && <DropdownMenu modal={false}><DropdownMenuTrigger asChild><button className="topnav-icon grid size-7 min-h-7 cursor-pointer place-items-center rounded-full border-0 shadow-none outline-none focus-visible:!outline-none" aria-label="Open profile menu"><Avatar className="size-7"><img src={profileImage || user.avatarUrl || "/pp.png"} alt={user.name} className="size-full object-cover" /><AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback></Avatar></button></DropdownMenuTrigger><DropdownMenuContent align="end" className="w-60"><DropdownMenuLabel><span className="block">{user.name}</span><span className="block truncate font-normal text-[var(--muted-foreground)]">{user.email}</span></DropdownMenuLabel><DropdownMenuSeparator /><DropdownMenuItem className="cursor-pointer" onSelect={() => void signOut()}><LogOut />Sign out</DropdownMenuItem></DropdownMenuContent></DropdownMenu>}
         </div>
       </header>
-      <div className="flex min-w-0 items-start bg-[var(--card)]"><main id="main-content" className="min-h-[calc(100dvh-4.5rem)] min-w-0 flex-1 bg-[var(--background)] px-4 pb-24 pt-7 md:px-7 lg:overflow-hidden lg:rounded-tl-3xl lg:pb-10">{children}</main>{assistantPage && assistantOpen && <><AssistantPanel page={assistantPage} width={400} onClose={() => setAssistantOpen(false)} /><AssistantPanel page={assistantPage} mobile onClose={() => setAssistantOpen(false)} /></>}</div>
+      <div className="flex min-w-0 items-start bg-[var(--card)]"><main id="main-content" className="min-h-[calc(100dvh-4.5rem)] min-w-0 flex-1 bg-[var(--background)] px-4 pb-24 pt-7 md:px-7 lg:overflow-hidden lg:rounded-tl-3xl lg:pb-10">{children}</main>{assistantPage && assistantOpen && <><AssistantPanel page={assistantPage} contextStorageKey={assistantContextStorageKey} proposalStorageKey={assistantProposalStorageKey} width={400} onClose={() => setAssistantOpen(false)} /><AssistantPanel page={assistantPage} contextStorageKey={assistantContextStorageKey} proposalStorageKey={assistantProposalStorageKey} mobile onClose={() => setAssistantOpen(false)} /></>}</div>
     </div>
     {assistantPage && !assistantOpen && <><button onClick={() => setAssistantOpen(true)} className="fixed right-4 top-20 z-30 hidden size-10 place-items-center rounded-xl text-[var(--muted-foreground)] hover:bg-[var(--muted)] hover:text-[var(--foreground)] xl:grid" aria-label="Open AI agent" title="Open AI agent"><PanelRightOpen className="size-5" /></button><button onClick={() => setAssistantOpen(true)} className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom))] right-4 z-50 grid size-12 place-items-center rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] shadow-[0_8px_24px_rgba(0,0,0,.28)] ring-4 ring-[color-mix(in_srgb,var(--background)_70%,transparent)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[var(--ring)] xl:hidden" aria-label="Open AI agent" title="Open AI agent"><Sparkles className="size-5" /></button></>}
+    <NomosToastViewport />
   </div>;
 }

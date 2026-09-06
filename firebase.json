@@ -1,9 +1,18 @@
 {
-  "functions": {
-    "source": "functions",
-    "runtime": "nodejs20",
-    "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
-  },
+  "functions": [
+    {
+      "source": "platform/functions",
+      "codebase": "shared",
+      "runtime": "nodejs20",
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+    },
+    {
+      "source": "apps/fitness/functions",
+      "codebase": "fitness",
+      "runtime": "nodejs20",
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+    }
+  ],
   "auth": {
     "providers": {
       "googleSignIn": {
@@ -16,7 +25,7 @@
       }
     }
   },
-  "firestore": { "rules": "firestore.rules" },
+  "firestore": { "rules": "firestore.rules", "indexes": "firestore.indexes.json" },
   "storage": { "rules": "storage.rules" },
   "hosting": [
     {
@@ -24,25 +33,30 @@
       "public": "platform/id/out",
       "cleanUrls": true,
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "headers": [{ "source": "**/*.html", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }],
+      "headers": [
+        { "source": "**/*.html", "headers": [{ "key": "Cache-Control", "value": "no-store" }] },
+        { "source": "**/*.js", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }
+      ],
       "rewrites": [
         { "source": "/api/auth/**", "function": { "functionId": "authApi", "region": "europe-west2" } },
-        { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } }
+        { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/openai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } }
       ]
     },
     {
       "target": "default",
-      "public": "firebase-empty",
+      "public": "platform/base/out",
       "cleanUrls": true,
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"]
     },
     {
       "target": "home",
-      "public": "firebase-empty",
+      "public": "apps/home/out",
       "cleanUrls": true,
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
         { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/openai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
         { "source": "/api/auth/**", "function": { "functionId": "authApi", "region": "europe-west2" } },
         { "source": "**", "function": { "functionId": "authGate", "region": "europe-west2" } }
       ]
@@ -53,9 +67,17 @@
       "cleanUrls": false,
       "trailingSlash": true,
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "headers": [
+        { "source": "**/*.html", "headers": [{ "key": "Cache-Control", "value": "no-store" }] },
+        { "source": "**/*.txt", "headers": [{ "key": "Cache-Control", "value": "no-store" }] },
+        { "source": "/plan/**", "headers": [{ "key": "Cache-Control", "value": "no-store" }] },
+        { "source": "/exercises/**", "headers": [{ "key": "Cache-Control", "value": "no-store" }] }
+      ],
       "rewrites": [
         { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/openai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
         { "source": "/api/data/**", "function": { "functionId": "dataApi", "region": "europe-west2" } },
+        { "source": "/api/media/**", "function": { "functionId": "mediaApi", "region": "europe-west2" } },
         {
           "source": "/api/hevy/**",
           "function": { "functionId": "fitnessApi", "region": "europe-west2" }
@@ -64,6 +86,54 @@
           "source": "/api/auth/**",
           "function": { "functionId": "authApi", "region": "europe-west2" }
         }
+      ]
+    },
+    {
+      "target": "template",
+      "public": "apps/template/out",
+      "cleanUrls": false,
+      "trailingSlash": true,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/openai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/auth/**", "function": { "functionId": "authApi", "region": "europe-west2" } }
+      ]
+    },
+    {
+      "target": "finance",
+      "public": "apps/finance/out",
+      "cleanUrls": false,
+      "trailingSlash": true,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/openai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/auth/**", "function": { "functionId": "authApi", "region": "europe-west2" } }
+      ]
+    },
+    {
+      "target": "goals",
+      "public": "apps/goals/out",
+      "cleanUrls": false,
+      "trailingSlash": true,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/openai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/auth/**", "function": { "functionId": "authApi", "region": "europe-west2" } }
+      ]
+    },
+    {
+      "target": "time",
+      "public": "apps/time/out",
+      "cleanUrls": false,
+      "trailingSlash": true,
+      "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+      "rewrites": [
+        { "source": "/api/ai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/openai/**", "function": { "functionId": "aiApi", "region": "europe-west2" } },
+        { "source": "/api/auth/**", "function": { "functionId": "authApi", "region": "europe-west2" } }
       ]
     }
   ]

@@ -1,4 +1,4 @@
-import type { AiConversation, AiConversationResponse, AiMessage } from "./types";
+import type { AiConversation, AiConversationResponse, AiMessageResponse, AiRequestContext } from "./types";
 
 export type AvailableAiModel = { name: string; tokens: number; requests: number };
 export type AvailableAiModelsResult = { models: AvailableAiModel[]; live: boolean; trackedTokens?: number; creditLimitTokens?: number; error?: string };
@@ -8,6 +8,8 @@ const LOCAL_CACHE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const modelCache = new Map<string, { expiresAt: number; value: AvailableAiModelsResult }>();
 const modelRequests = new Map<string, Promise<AvailableAiModelsResult>>();
 const conversationRequests = new Map<string, Promise<AiConversationResponse>>();
+const conversationListRequests = new Map<string, Promise<{ conversations: AiConversation[] }>>();
+const conversationListVersions = new Map<string, number>();
 
 type CacheEnvelope<T> = { savedAt: number; value: T };
 type RequestOptions = { force?: boolean };
@@ -75,12 +77,21 @@ export async function listConversations(appId: string, options: RequestOptions =
     const cached = getCachedConversations(appId);
     if (cached.length) return { conversations: cached };
   }
-  const result = await request<{ conversations: AiConversation[] }>(`/conversations?appId=${encodeURIComponent(appId)}`);
-  const conversations = sortConversations(result.conversations);
-  writeCache(cacheKey(appId, "conversations"), conversations);
-  return { conversations };
+  const pending = conversationListRequests.get(appId);
+  if (pending) return pending;
+  const version = conversationListVersions.get(appId) || 0;
+  const next: Promise<{ conversations: AiConversation[] }> = request<{ conversations: AiConversation[] }>(`/conversations?appId=${encodeURIComponent(appId)}`).then((result) => {
+    const conversations = sortConversations(result.conversations);
+    if ((conversationListVersions.get(appId) || 0) === version) writeCache(cacheKey(appId, "conversations"), conversations);
+    return { conversations };
+  }).finally(() => {
+    if (conversationListRequests.get(appId) === next) conversationListRequests.delete(appId);
+  });
+  conversationListRequests.set(appId, next);
+  return next;
 }
 export function createConversation(appId: string, model?: string) {
+  conversationListVersions.set(appId, (conversationListVersions.get(appId) || 0) + 1);
   const pending = conversationRequests.get(appId);
   if (pending) return pending;
   const next = request<AiConversationResponse>("/conversations", { method: "POST", body: JSON.stringify({ appId, model }) }).then((result) => {
@@ -101,11 +112,11 @@ export async function getConversation(appId: string, conversationId: string, opt
   writeCache(cacheKey(appId, "conversation", conversationId), result);
   return result;
 }
-export async function sendMessage(appId: string, conversationId: string, content: string) {
-  const result = await request<{ userMessage: AiMessage; assistantMessage: AiMessage }>(`/conversations/${encodeURIComponent(conversationId)}/messages?appId=${encodeURIComponent(appId)}`, { method: "POST", body: JSON.stringify({ content }) });
+export async function sendMessage(appId: string, conversationId: string, content: string, context?: AiRequestContext) {
+  const result = await request<AiMessageResponse>(`/conversations/${encodeURIComponent(conversationId)}/messages?appId=${encodeURIComponent(appId)}`, { method: "POST", body: JSON.stringify({ content, ...(context ? { context } : {}) }) });
   const cached = getCachedConversation(appId, conversationId);
   if (cached) {
-    const conversation = { ...cached.conversation, title: cached.conversation.messageCount === 0 ? content.slice(0, 72) : cached.conversation.title, updatedAt: result.assistantMessage.createdAt, messageCount: cached.conversation.messageCount + 2 };
+    const conversation = result.conversation || { ...cached.conversation, title: cached.conversation.messageCount === 0 ? content.slice(0, 72) : cached.conversation.title, updatedAt: result.assistantMessage.createdAt, messageCount: cached.conversation.messageCount + 2 };
     writeCache(cacheKey(appId, "conversation", conversationId), { conversation, messages: [...cached.messages, result.userMessage, result.assistantMessage] });
     const conversations = getCachedConversations(appId).map((item) => item.id === conversationId ? conversation : item);
     writeCache(cacheKey(appId, "conversations"), sortConversations(conversations));
@@ -113,6 +124,8 @@ export async function sendMessage(appId: string, conversationId: string, content
   return result;
 }
 export async function deleteConversation(appId: string, conversationId: string) {
+  conversationListVersions.set(appId, (conversationListVersions.get(appId) || 0) + 1);
+  conversationListRequests.delete(appId);
   await request<void>(`/conversations/${encodeURIComponent(conversationId)}?appId=${encodeURIComponent(appId)}`, { method: "DELETE" });
   removeCache(cacheKey(appId, "conversation", conversationId));
   writeCache(cacheKey(appId, "conversations"), getCachedConversations(appId).filter((conversation) => conversation.id !== conversationId));

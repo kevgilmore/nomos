@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @source "../../../platform/ui/src";
+html body { font-family: Figtree, sans-serif !important; }
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -21,13 +22,8 @@
 html, body { min-height: 100%; background: var(--card); }
 body { min-height: 100dvh; margin: 0; color: var(--foreground); font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }
 button, a { -webkit-tap-highlight-color: transparent; }
+button:not(:disabled), [role="button"]:not([aria-disabled="true"]) { cursor: pointer; }
+button:disabled, [role="button"][aria-disabled="true"] { cursor: not-allowed; }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent); outline-offset: 2px; }
-.topnav-icon:focus-visible { outline: none; }
 .nomos-home-search:focus-visible { outline: none; }
-.topnav-icon { width: 2.5rem; height: 2.5rem; min-height: 2.5rem; display: grid; flex-shrink: 0; place-items: center; background: transparent !important; transition: none !important; }
-.topnav-icon:hover, .topnav-icon[aria-expanded="true"] { background: var(--accent) !important; }
-.topnav-icon:focus-visible { outline: none !important; box-shadow: none !important; border-color: transparent !important; }
-.topnav-icon { border-color: transparent !important; box-shadow: none !important; }
-.topnav-icon > span { width: 2.25rem; height: 2.25rem; }
-.topnav-icon > svg { width: 1.225rem !important; height: 1.225rem !important; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; } }

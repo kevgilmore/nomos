@@ -5,6 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Sign in · Nomos ID",
   description: "Local Nomos identity proof of concept.",
+  icons: { icon: "/nomos-mark.png", apple: "/nomos-mark.png" },
 };
 
 export const viewport: Viewport = {

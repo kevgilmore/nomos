@@ -5,11 +5,10 @@
 1. Run `pnpm create:app <slug> <Display Name>`.
 2. Customize the generated `app-config.ts`, routes, navigation, and manifest.
 3. Add only the platform packages the app needs.
-4. Add deployment identity in `platform/infra` and the app's environment configuration.
-5. Provision DNS and infrastructure through the reviewed infrastructure workflow.
-6. Deploy with the shared Skaffold/deployment configuration.
+4. The generator adds the Firebase Hosting target, custom domain, and Cloudflare CNAME/TXT records, then verifies the new HTTP and HTTPS endpoints. It requires Firebase CLI login plus Cloudflare DNS edit credentials.
+5. Deploy with the shared Hosting workflow after the generated production build passes.
 
-The app generator is at `.agents/skills/new-app`. Its script is deliberately small and deterministic; infrastructure changes should remain explicit and reviewable.
+The app generator is at `.agents/skills/new-app`. Shared UI remains in `platform/ui`; the generated app contains only app-owned routes/configuration and theme tokens.
 
 ## Update
 

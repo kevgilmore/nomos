@@ -1,11 +1,11 @@
-import { ChartNoAxesCombined, Dumbbell, LibraryBig, LayoutDashboard, type LucideIcon } from "lucide-react";
+import { Apple, Dumbbell, LibraryBig, TrendingUp, type LucideIcon } from "lucide-react";
 
 export type PageConfig = { slug: string; label: string; description: string; icon: LucideIcon; tabs: { slug: string; label: string }[] };
 export const pages: PageConfig[] = [
-  { slug: "dashboard", label: "Overview", description: "Your ULPPL week at a glance.", icon: LayoutDashboard, tabs: [{ slug: "overview", label: "This week" }, { slug: "history", label: "Recent sessions" }] },
-  { slug: "workouts", label: "Routines", description: "View and edit the five routines in your ULPPL plan.", icon: Dumbbell, tabs: [{ slug: "plan", label: "My ULPPL" }, { slug: "exercises", label: "Exercise index" }] },
-  { slug: "progress", label: "Progress", description: "See training volume and consistency.", icon: ChartNoAxesCombined, tabs: [{ slug: "trends", label: "Training trends" }] },
-  { slug: "exercises", label: "Exercises", description: "Browse exercise details and demonstrations.", icon: LibraryBig, tabs: [{ slug: "library", label: "All exercises" }] },
+  { slug: "progress", label: "Progress", description: "Track your journey toward your physique and strength goals.", icon: TrendingUp, tabs: [{ slug: "overview", label: "Progress" }] },
+  { slug: "plan", label: "Workout Plan", description: "Your current routines with exercise guidance and targets.", icon: Dumbbell, tabs: [{ slug: "current", label: "Workout Plan" }] },
+  { slug: "exercises", label: "Exercises", description: "Browse exercise details and demonstrations.", icon: LibraryBig, tabs: [{ slug: "library", label: "Exercise library" }] },
+  { slug: "diet", label: "Diet", description: "Plan meals and keep your nutrition targets in view.", icon: Apple, tabs: [{ slug: "overview", label: "Diet overview" }] },
 ];
 
 export function getPage(pageSlug: string) { return pages.find((page) => page.slug === pageSlug); }

@@ -32,6 +32,15 @@ async function findApps(directory) {
   return apps;
 }
 
+async function manifestPort(app, fallback) {
+  try {
+    const manifest = JSON.parse(await readFile(path.join(app.directory, "app.manifest.json"), "utf8"));
+    const match = typeof manifest.href === "string" && manifest.href.match(/^http:\/\/localhost:(\d+)$/);
+    if (match && firstPort === 3000) return Number(match[1]);
+  } catch {}
+  return fallback;
+}
+
 const discoveredApps = [...await findApps(baseRoot), ...await findApps(appsRoot)].sort((left, right) => left.name.localeCompare(right.name));
 const apps = requestedApp ? discoveredApps.filter((app) => app.name === `@nomos/${requestedApp}` || path.basename(app.directory) === requestedApp) : discoveredApps;
 
@@ -51,10 +60,10 @@ const children = [];
 let nextPort = firstPort;
 await mkdir(stateDirectory, { recursive: true });
 for (const app of apps) {
-  const port = nextPort++;
+  const port = await manifestPort(app, nextPort++);
   console.log(`[dev] ${app.name} → http://${hostname}:${port}`);
   const child = spawn(path.join(app.directory, "node_modules", ".bin", "next"), ["dev", "--hostname", hostname, "--port", String(port)], {
-    cwd: repoRoot,
+    cwd: app.directory,
     env: process.env,
     stdio: "inherit",
     detached: true

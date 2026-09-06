@@ -1,0 +1,8 @@
+{
+  "slug": "template",
+  "name": "Template",
+  "href": "http://localhost:3004",
+  "productionHref": "https://template.nomos.codes",
+  "icon": "app",
+  "discoverable": true
+}

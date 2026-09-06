@@ -1,0 +1,10 @@
+{
+  "name": "nomos-functions",
+  "private": true,
+  "engines": { "node": "20" },
+  "main": "lib/index.js",
+  "exports": { ".": "./lib/index.js", "./auth": "./lib/auth.js" },
+  "scripts": { "build": "node scripts/sync-db.mjs && tsc", "deploy": "npm run build && firebase deploy --only functions:shared" },
+  "dependencies": { "firebase-admin": "^13.5.0", "firebase-functions": "^6.4.0" },
+  "devDependencies": { "typescript": "^5.7.2" }
+}

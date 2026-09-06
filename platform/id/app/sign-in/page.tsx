@@ -16,19 +16,13 @@ function ActiveSessionControls() {
     await fetch("/api/auth/sign-out", { method: "POST", credentials: "include" });
     window.location.reload();
   }
-  return <button type="button" onClick={() => void signOut()} disabled={working} className="mt-4 text-xs text-white/60 underline underline-offset-4">{working ? "Signing out…" : "Sign out"}</button>;
+  return <button type="button" onClick={() => void signOut()} disabled={working} className="mt-4 cursor-pointer text-xs text-white/60 underline underline-offset-4 disabled:cursor-wait">{working ? "Signing out…" : "Sign out"}</button>;
 }
 
 export default function SignInPage() {
   const [returnTo, setReturnTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
-    if (window.location.hostname === "nomos-id.web.app") {
-      const canonical = new URL("https://id.nomos.codes/sign-in/");
-      canonical.search = window.location.search;
-      window.location.replace(canonical.toString());
-      return;
-    }
     const params = new URLSearchParams(window.location.search);
     const value = params.get("returnTo");
     const local = isLocalDevelopmentHost(window.location.hostname);

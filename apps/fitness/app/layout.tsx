@@ -15,6 +15,7 @@ const defaultTitle = getDefaultTitle(appConfig.name, appConfig.brandName);
 export const metadata: Metadata = {
   title: { default: defaultTitle, template: `%s · ${defaultTitle}` },
   description: appConfig.description,
+  icons: { icon: "/nomos-mark.png", apple: "/nomos-mark.png" },
 };
 
 export const viewport: Viewport = {

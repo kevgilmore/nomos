@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
 import { Figtree } from "next/font/google";
 import { appConfig } from "@/lib/app-config";
 import "./globals.css";
@@ -15,6 +14,7 @@ const defaultTitle = getDefaultTitle(appConfig.name, appConfig.brandName);
 export const metadata: Metadata = {
   title: { default: defaultTitle, template: `%s · ${defaultTitle}` },
   description: appConfig.description,
+  icons: { icon: "/nomos-mark.png", apple: "/nomos-mark.png" },
 };
 
 export const viewport: Viewport = {
@@ -25,7 +25,6 @@ export const viewport: Viewport = {
   themeColor: "#19171f",
 };
 
-export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const dark = (await cookies()).get("nomos-theme")?.value !== "light";
-  return <html lang="en" className={`${figtree.variable}${dark ? " dark" : ""}`} suppressHydrationWarning><body>{children}</body></html>;
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="en" className={figtree.variable} suppressHydrationWarning><body>{children}</body></html>;
 }

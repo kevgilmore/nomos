@@ -9,6 +9,7 @@
 **/.next/
 **/.next-dev/
 **/.next-production/
+**/_next/
 **/dist/
 **/out/
 **/build/
@@ -19,5 +20,5 @@
 
 .nomos-dev
 .nomos-local-auth.json*
-functions/src/db.ts
-functions/lib/
+platform/functions/src/db.ts
+platform/functions/lib/

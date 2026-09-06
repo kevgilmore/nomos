@@ -24,6 +24,6 @@ pnpm install
 pnpm --filter @nomos/finance dev
 ```
 
-The generator creates only the minimal app shell and registers its manifest. It does not copy platform source. Add shared behavior by importing `@nomos/*` packages.
+The generator creates the app under `apps/<slug>`, uses the shared `@nomos/ui` shell rather than copying navbar/sidebar/AI-agent source, registers its manifest in the waffle menu for every app, and validates a production build before provisioning Firebase Hosting, `<slug>.nomos.codes`, and Cloudflare DNS.
 
 For a nested Hustle app, use a slug such as `hustle-experimenter` unless a future workspace-specific grouping requires a custom generator rule.

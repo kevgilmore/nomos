@@ -1,0 +1,31 @@
+"use client";
+
+import { Apple, Beef, Check, Coffee, Droplets, Flame, Salad, Target, Utensils } from "lucide-react";
+import { Badge, Card, CardContent, CardHeader, CardTitle } from "@nomos/ui";
+
+const macros = [
+  { label: "Protein", value: "128g", target: "160g", progress: 80, color: "bg-fuchsia-300", text: "text-fuchsia-200" },
+  { label: "Carbs", value: "174g", target: "240g", progress: 73, color: "bg-sky-300", text: "text-sky-200" },
+  { label: "Fat", value: "51g", target: "70g", progress: 73, color: "bg-amber-300", text: "text-amber-200" },
+];
+
+const meals = [
+  { name: "Greek yogurt power bowl", detail: "Greek yogurt · berries · granola", calories: 420, time: "Breakfast", icon: Coffee, done: true },
+  { name: "Chicken grain bowl", detail: "Chicken · rice · greens · tahini", calories: 610, time: "Lunch", icon: Salad, done: true },
+  { name: "Cottage cheese toast", detail: "Sourdough · cottage cheese · tomato", calories: 350, time: "Snack", icon: Apple, done: false },
+  { name: "Salmon and roasted vegetables", detail: "Salmon · potatoes · tenderstem broccoli", calories: 680, time: "Dinner", icon: Beef, done: false },
+];
+
+export function DietPage() {
+  return <div className="space-y-6">
+    <section className="overflow-hidden rounded-3xl border border-[#3d3158] bg-[radial-gradient(circle_at_82%_10%,rgba(167,139,250,.2),transparent_34%),linear-gradient(135deg,#211a30,#15121d)] p-6 md:p-8">
+      <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><p className="eyebrow">DAILY NUTRITION</p><h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-[-.045em] md:text-5xl">Eat with intent.<br/><span className="text-[#a99fba]">Fuel your training.</span></h2><p className="mt-4 max-w-xl text-sm leading-6 text-[#aaa3b5]">A simple snapshot of today’s nutrition targets and planned meals.</p></div><div className="rounded-2xl border border-white/10 bg-white/[.04] p-4 md:min-w-44"><div className="flex items-center gap-2 text-fuchsia-100/70"><Flame className="size-4"/><span className="text-xs font-bold uppercase tracking-[.12em]">Calories</span></div><strong className="mt-2 block text-3xl font-semibold">1,380 <span className="text-base font-normal text-white/45">/ 2,240</span></strong><div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full w-[62%] rounded-full bg-fuchsia-300"/></div></div></div>
+    </section>
+
+    <div className="grid gap-4 sm:grid-cols-3"><Card><CardContent className="flex items-center gap-3 p-5"><span className="grid size-11 place-items-center rounded-2xl bg-fuchsia-300/15 text-fuchsia-200"><Target className="size-5"/></span><div><p className="text-xs uppercase tracking-[.1em] text-[var(--muted-foreground)]">Daily target</p><p className="mt-1 text-xl font-semibold">2,240 kcal</p></div></CardContent></Card><Card><CardContent className="flex items-center gap-3 p-5"><span className="grid size-11 place-items-center rounded-2xl bg-sky-300/15 text-sky-200"><Droplets className="size-5"/></span><div><p className="text-xs uppercase tracking-[.1em] text-[var(--muted-foreground)]">Water</p><p className="mt-1 text-xl font-semibold">1.5 <span className="text-sm font-normal text-[var(--muted-foreground)]">/ 2.5 L</span></p></div></CardContent></Card><Card><CardContent className="flex items-center gap-3 p-5"><span className="grid size-11 place-items-center rounded-2xl bg-emerald-300/15 text-emerald-200"><Check className="size-5"/></span><div><p className="text-xs uppercase tracking-[.1em] text-[var(--muted-foreground)]">Meals logged</p><p className="mt-1 text-xl font-semibold">2 <span className="text-sm font-normal text-[var(--muted-foreground)]">/ 4</span></p></div></CardContent></Card></div>
+
+    <div className="grid gap-5 lg:grid-cols-[.85fr_1.15fr]"><Card><CardHeader><div className="flex items-center justify-between gap-3"><div><CardTitle>Macro balance</CardTitle><p className="mt-1 text-sm text-[var(--muted-foreground)]">Progress toward today’s targets</p></div><Badge variant="secondary">On track</Badge></div></CardHeader><CardContent className="space-y-5">{macros.map((macro) => <div key={macro.label}><div className="mb-2 flex items-center justify-between gap-3 text-sm"><span className="font-medium">{macro.label}</span><span className={macro.text}>{macro.value} <span className="text-[var(--muted-foreground)]">/ {macro.target}</span></span></div><div className="h-2 overflow-hidden rounded-full bg-[var(--muted)]"><div className={`h-full rounded-full ${macro.color}`} style={{ width: `${macro.progress}%` }}/></div></div>)}</CardContent></Card><Card><CardHeader><div className="flex items-center justify-between gap-3"><div><CardTitle>Today’s meals</CardTitle><p className="mt-1 text-sm text-[var(--muted-foreground)]">A mock plan for your training day</p></div><Utensils className="size-5 text-[var(--muted-foreground)]"/></div></CardHeader><CardContent className="space-y-2">{meals.map((meal) => { const Icon = meal.icon; return <div key={meal.name} className="flex items-center gap-3 rounded-2xl border border-[var(--border)] p-3 sm:p-4"><span className={`grid size-10 shrink-0 place-items-center rounded-xl ${meal.done ? "bg-emerald-300/15 text-emerald-200" : "bg-[var(--muted)] text-[var(--muted-foreground)]"}`}><Icon className="size-4"/></span><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{meal.name}</p>{meal.done && <Badge variant="secondary" className="text-[10px]">Logged</Badge>}</div><p className="mt-0.5 truncate text-xs text-[var(--muted-foreground)]">{meal.time} · {meal.detail}</p></div><span className="shrink-0 text-sm font-medium">{meal.calories} <span className="text-xs font-normal text-[var(--muted-foreground)]">kcal</span></span></div>; })}</CardContent></Card></div>
+
+    <Card><CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-medium">Keep the basics consistent</p><p className="mt-1 text-sm text-[var(--muted-foreground)]">This Diet page is using mock data for now. Real targets and meal logging can plug into this layout later.</p></div><div className="flex items-center gap-2 text-sm text-[var(--muted-foreground)]"><Apple className="size-4 text-fuchsia-200"/>Mock plan</div></CardContent></Card>
+  </div>;
+}

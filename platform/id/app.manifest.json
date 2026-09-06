@@ -2,6 +2,7 @@
   "slug": "id",
   "name": "ID",
   "href": "http://localhost:3001",
+  "productionHref": "https://id.nomos.codes",
   "icon": "app",
   "discoverable": false
 }

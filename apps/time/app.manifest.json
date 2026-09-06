@@ -1,0 +1,7 @@
+{
+  "slug": "time",
+  "name": "Time",
+  "href": "http://localhost:3007",
+  "icon": "app",
+  "discoverable": true
+}

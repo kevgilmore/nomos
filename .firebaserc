@@ -16,6 +16,18 @@
         ],
         "id": [
           "nomos-id"
+        ],
+        "finance": [
+          "nomos-finance"
+        ],
+        "goals": [
+          "nomos-goals"
+        ],
+        "time": [
+          "nomos-time"
+        ],
+        "template": [
+          "nomos-template"
         ]
       }
     }

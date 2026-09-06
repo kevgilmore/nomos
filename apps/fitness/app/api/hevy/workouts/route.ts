@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { getRecentWorkouts } from "@/lib/hevy";
+import { getRecentWorkouts, getWorkoutHistory } from "@/lib/hevy";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    return NextResponse.json({ workouts: await getRecentWorkouts() });
+    const workouts = new URL(request.url).searchParams.get("history") === "true" ? await getWorkoutHistory() : await getRecentWorkouts();
+    return NextResponse.json({ workouts });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to load workouts" }, { status: 502 });
   }

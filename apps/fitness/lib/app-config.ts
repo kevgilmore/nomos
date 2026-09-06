@@ -5,6 +5,6 @@ export const appConfig = {
   name: "Fitness",
   brandName: "Nomos",
   description: "Plan workouts, track progress, and build healthy routines.",
-  homePath: "/dashboard/overview",
+  homePath: "/plan/",
   homeUrl: NOMOS_URLS.home,
 } as const;

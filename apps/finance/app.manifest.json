@@ -1,0 +1,7 @@
+{
+  "slug": "finance",
+  "name": "Finance",
+  "href": "http://localhost:3005",
+  "icon": "app",
+  "discoverable": true
+}

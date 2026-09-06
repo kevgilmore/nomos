@@ -2,7 +2,7 @@ export type AiModelUsage = { tokens: number; requests: number };
 export type AvailableAiModel = { name: string; tokens: number; requests: number };
 export type OpenAiModelResult = { models: AvailableAiModel[]; live: boolean; trackedTokens?: number; creditLimitTokens?: number; error?: string };
 
-const popularModelOrder = ["gpt-5", "gpt-4o", "gpt-4.1", "gpt-5-mini", "o4-mini", "gpt-4o-mini", "gpt-4.1-mini", "o3"];
+const popularModelOrder = ["gpt-5.4-nano", "gpt-5.4-mini", "gpt-5.4", "gpt-5.5", "gpt-5", "gpt-4o", "gpt-4.1", "o4-mini", "gpt-4o-mini", "gpt-4.1-mini", "o3"];
 
 function popularity(name: string) {
   const exact = popularModelOrder.indexOf(name);

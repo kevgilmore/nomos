@@ -2,6 +2,7 @@
   "slug": "home",
   "name": "Home",
   "href": "http://localhost:3000",
+  "productionHref": "https://nomos.codes",
   "icon": "app",
   "discoverable": true
 }

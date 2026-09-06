@@ -5,6 +5,6 @@ export const appConfig = {
   name: "Base",
   brandName: "Nomos",
   description: "The reusable Nomos base application.",
-  homePath: "/mission-control/pulse-check",
+  homePath: "/",
   homeUrl: NOMOS_URLS.home,
 } as const;

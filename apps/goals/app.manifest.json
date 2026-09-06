@@ -1,0 +1,7 @@
+{
+  "slug": "goals",
+  "name": "Goals",
+  "href": "http://localhost:3006",
+  "icon": "app",
+  "discoverable": true
+}
