@@ -19,6 +19,7 @@
 *.tsbuildinfo
 
 .nomos-dev
+.nomos/
 .nomos-local-auth.json*
 platform/functions/src/db.ts
 platform/functions/lib/

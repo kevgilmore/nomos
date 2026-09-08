@@ -18,11 +18,28 @@ function FilterTabs({ label, value, options, onChange }: { label: string; value:
 
 function ExerciseVideo({ exercise }: ExerciseVideoProps) {
   const video = useRef<HTMLVideoElement>(null);
-  const [hovered, setHovered] = useState(false);
-  const enter = () => { setHovered(true); void video.current?.play(); };
-  const leave = () => { setHovered(false); video.current?.pause(); if (video.current) video.current.currentTime = 0; };
+  const [playing, setPlaying] = useState(false);
+  const play = () => {
+    const currentVideo = video.current;
+    if (!currentVideo) return;
+    void currentVideo.play().then(() => setPlaying(true)).catch(() => undefined);
+  };
+  const stop = () => {
+    video.current?.pause();
+    if (video.current) video.current.currentTime = 0;
+    setPlaying(false);
+  };
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      play();
+    }
+  };
   return <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#17121f]">
-    <div className="absolute inset-0" onMouseEnter={enter} onMouseLeave={leave}>{exercise.imageUrl && <img src={exercise.imageUrl} alt={`${exercise.name} demonstration`} className={`absolute inset-0 size-full bg-white object-contain p-4 transition-opacity ${exercise.videoUrl && hovered ? "opacity-0" : "opacity-100"}`} />}{exercise.videoUrl && <video ref={video} src={exerciseVideoUrl(exercise.videoUrl) || undefined} poster={exercise.imageUrl || undefined} autoPlay={!exercise.imageUrl} muted loop playsInline preload="metadata" className={`absolute inset-0 size-full object-cover transition-opacity ${hovered || !exercise.imageUrl ? "opacity-100" : "opacity-0"}`} aria-label={`${exercise.name} demonstration`} />}{!exercise.imageUrl && !exercise.videoUrl && <div className="absolute inset-0 grid place-items-center text-white/40"><Video className="size-8" /></div>}</div>
+    <div className="absolute inset-0" role="button" tabIndex={0} aria-label={`Play ${exercise.name} demonstration`} onPointerEnter={play} onPointerLeave={stop} onClick={play} onKeyDown={handleKeyDown}>
+      {exercise.imageUrl && <img src={exercise.imageUrl} alt={`${exercise.name} demonstration`} className={`absolute inset-0 size-full object-contain p-4 transition-opacity ${playing ? "opacity-0" : "opacity-100"}`} />}
+      {exercise.videoUrl ? <video ref={video} src={exerciseVideoUrl(exercise.videoUrl) || undefined} muted loop playsInline preload="none" className={`absolute inset-0 size-full object-cover transition-opacity ${playing || !exercise.imageUrl ? "opacity-100" : "opacity-0"}`} aria-hidden="true" /> : !exercise.imageUrl && <div className="grid size-full place-items-center text-white/40"><Video className="size-8" /></div>}
+    </div>
   </div>;
 }
 

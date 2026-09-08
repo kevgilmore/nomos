@@ -5,64 +5,69 @@ description: Execute repository tasks from Todoist when explicitly marked ready,
 
 # Todoist Agent Workflow
 
-Use this skill when processing Todoist tasks intended to drive work in a local app, project, or repository.
+Use this skill when processing work tickets in the Todoist project named `Nomos`.
 
 ## Task contract
 
-Each task should identify:
-
-- `app/project/repo`: the application, project, or repository to use
-- `task`: the requested change
-- `description`: scope, context, and implementation details
-- `test criteria`: how success must be verified
-- `proof`: required evidence, such as a screenshot, test output, URL, or commit
-
-Do not begin until a comment contains the exact standalone command `agent: ready` or `agent: rdy`. Do not start based on vague use of “ready”.
+Task names use the format `[app] Task name`. The task description explains what to do.
+Only process tasks in the Todoist project named `Nomos`, including tasks nested beneath other tasks as subtasks at any depth.
+Process tasks labelled `Ready`, and also tasks labelled `In review` when they receive a new comment beginning with `fix` or `fix:`. Treat `Deploy` as an approval state, not as a work queue state.
 
 ## Claiming a task
 
-Before doing work, add:
+Before doing work, replace the `Ready` label with `In progress`.
 
-```text
-agent: started
-repo: <resolved repository>
-```
+Process tasks sequentially, one at a time. A single invocation should drain the available queue: after a task reaches `In review` or is blocked, re-scan the entire `Nomos` hierarchy and pick the next `Ready` task. Do not run multiple repository tasks in parallel.
 
-Process one task at a time unless parallel work is explicitly requested. If the repository or scope cannot be resolved, comment `agent: blocked` with the missing information and stop.
+If the current task is unfinished, keep it `In progress` and continue or resume that task before claiming another. Do not abandon an implementation halfway through just because another task is available. Once implementation is complete but human testing or review remains, move it to `In review`, leave it open, and continue with the next independent `Ready` task.
+
+If the repository or scope cannot be resolved, keep the task `In progress`, record the missing information, and retry the same task; do not abandon it for another task.
 
 ## Execution
 
-1. Resolve the named repository and inspect its current state. Preserve unrelated user changes.
-2. Read the description and test criteria before editing.
+1. Resolve the app from the `[app]` task-name prefix and inspect its current state. Preserve unrelated user changes.
+2. Read the task description before editing.
 3. Make the smallest appropriate change.
-4. Run the requested tests and directly relevant checks.
-5. Collect the requested proof. If a screenshot is required, capture the relevant UI state and attach it to the Todoist task when supported; otherwise comment an accessible path or reference.
+4. Run the changed app's typecheck, lint, and build checks.
+5. Test the changed app page with Playwright at a mobile/iPhone-sized viewport. Fail the check on console errors, page errors, failed requests, HTTP 4xx/5xx responses, auth/error redirects, visible error states, or missing expected content.
+6. Capture a screenshot only after that smoke test passes and upload it as a real Todoist attachment.
+
+If any implementation or validation check fails, diagnose and fix it, then rerun the failed check. A failed check is a repair instruction, not a reason to stop. The listener gives the same task multiple repair attempts while it remains `In progress`.
+
+## Review fixes
+
+While a task is `In review`, a user can add a Todoist comment beginning with `fix:` followed by the requested correction. Multiple new `fix:` comments are passed to the same repair run in order. A comment containing only `fix` means the previous fix instruction still applies. Each processed fix comment is recorded so it is not run repeatedly; adding another `fix` comment requests another repair pass.
+
+When a new fix comment is detected, the listener adds a persistent 👍 reaction to acknowledge that it has been received and is being worked on. The reaction is intentionally left in place after completion.
 
 ## Reporting
 
-On success, add:
+When the implementation and proof are complete:
 
 ```text
-agent: result
-status: passed
-summary: <what changed>
-tests: <commands and outcomes>
-proof: <screenshot, output, URL, or commit>
+RESULT: PASS
+🤖 Success: Implemented and verified with typecheck, lint, build, and mobile smoke test. Screenshot attached.
 ```
 
-Complete the Todoist task only when all stated criteria are satisfied. If human testing is needed, leave it open and comment `agent: ready for test` with exact steps and expected result.
+Replace `In progress` with `In review`. Leave the task open for review; do not complete it automatically. `In review` means implementation and automated validation passed, but human approval is still pending. The user changes the label to `Deploy` to approve the task as deploy-ready. Do not deploy or change a `Deploy` task unless a separate deployment instruction is provided.
 
-On failure or ambiguity, leave the task open and add:
+Only after the configured repair attempts are genuinely exhausted, leave the task open with the existing `Failed` label and add:
 
 ```text
 agent: blocked
 reason: <specific issue>
 attempted: <relevant commands or actions>
 needed: <decision or information required>
+
+Always end with `RESULT: BLOCKED` when any required check fails. Never use `RESULT: PASS` when the page shows an error or the screenshot contains an error state.
 ```
 
 Never claim success without evidence. Never attach credentials, tokens, private keys, or other sensitive data to Todoist.
 
 ## Listening behavior
 
-This skill defines how to process a task; it does not itself run continuously or listen for Todoist events. A Todoist webhook, scheduled automation, or explicit user invocation must supply tasks. When given a batch, select only tasks containing the exact ready command and process them according to this contract.
+When invoked, search the full `Nomos` project hierarchy, including subtasks at any depth, and select only `Ready` tasks from that hierarchy. Repeat the scan after every task. Stop when no `Ready` tasks remain, the user asks you to stop, the execution budget is exhausted, or the next task depends on an unresolved blocked task.
+
+The persistent listener is implemented at `.agents/skills/todo/scripts/listener.mjs`. A `$todo` listener invocation must start it directly with `node .agents/skills/todo/scripts/listener.mjs` and `TODOIST_API_TOKEN` available. It polls every 60 seconds by default (`TODOIST_POLL_INTERVAL_MS` can override this), holds a PID/heartbeat lease, never starts a second task while one is running, resumes the leased `In progress` task after a worker restart, and checks `In review` tasks for new `fix` comments. It uses the existing `Failed` and `Deploy` labels; it must not create labels. Validation failures stay `In progress` while the worker repairs and retries them. Only exhausted repair attempts receive `Failed`; changing a failed task back to `Ready` requests a fresh run. `Deploy` tasks are approved/deploy-ready and are not processed by the repair queue.
+
+The worker remains alive after the agent turn because `$todo` launches it as a detached background process. There is one mode only: it drains the current queue, waits 60 seconds when idle, and keeps listening for new `Ready` tasks until explicitly stopped.
