@@ -14,4 +14,4 @@ platform/
 
 Each code directory is a workspace package (`@nomos/api`, `@nomos/ui`, `@nomos/auth`, `@nomos/data`, and `@nomos/ai`). `infra` is configuration, not a React package.
 
-Put a component in `platform/ui` only when it is domain-neutral. Fitness-specific components stay in `apps/fitness`.
+All new components belong in `platform/` by default. Keep domain-neutral primitives in `platform/ui` and separate domain-specific components from generic primitives within the platform. An app-local component must be specific to that app and requires explicit user permission before creation. See the root [AGENTS.md](../../AGENTS.md) for the platform-first rules.

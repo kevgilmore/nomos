@@ -3,7 +3,7 @@
 Nomos is a lean pnpm workspace for independently deployable product apps built on shared platform capabilities.
 
 ```text
-cli/
+nomos/
 ├── platform/        # reusable packages, base app, and infrastructure
 │   ├── api/
 │   ├── ui/
@@ -20,6 +20,33 @@ cli/
 ```
 
 `platform/base` is the runnable shared base application. The other `platform/*` directories are reusable packages or infrastructure. Product apps own their `app/` directory and import reusable functionality from `@nomos/*` packages.
+
+## Setup
+
+Prerequisite for `$todo`: create or update `.env` in the repository root with
+your Todoist API token (keep existing values):
+
+```dotenv
+TODOIST_API_KEY=your_todoist_api_key
+```
+
+This file is Git-ignored. Optional: add `OPENAI_API_KEY` and `HEVY_API_TOKEN` for
+AI and Hevy features. Ordinary local development needs no API keys.
+
+Install the CLI once from the repository root (Ubuntu, WSL, or macOS):
+
+```bash
+bash scripts/install.sh
+```
+
+Then open a new terminal:
+
+```bash
+nomos setup
+nomos dev
+```
+
+Open http://localhost:3000; stop with Ctrl+C.
 
 ## Commands
 

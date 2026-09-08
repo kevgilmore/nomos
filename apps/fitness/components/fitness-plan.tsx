@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity, CalendarDays, ChevronDown, Dumbbell, RefreshCw, TimerReset, Video } from "lucide-react";
-import { Button, Card, CardContent } from "@nomos/ui";
+import { VideoPreview, Button, Card, CardContent } from "@nomos/ui";
 import type { HevyExercise, HevyRoutine, HevySet, HevyWorkout } from "@/lib/hevy-types";
 import { EXERCISE_DATASET, isFitnessExercise, type FitnessExercise } from "@/lib/exercises";
 import { exerciseVideoUrl } from "@/lib/media";
@@ -284,27 +284,9 @@ function WorkoutBanner({ routines, workouts, loading, error }: { routines: HevyR
 }
 
 function ExerciseMedia({ exercise, detail, libraryLoading }: { exercise: HevyExercise; detail?: FitnessExercise; libraryLoading: boolean }) {
-  const video = useRef<HTMLVideoElement>(null);
-  const [playing, setPlaying] = useState(false);
-  const hasVideo = Boolean(detail?.videoUrl);
-  const hasImage = Boolean(detail?.imageUrl);
-  const play = () => {
-    const currentVideo = video.current;
-    if (!currentVideo) return;
-    void currentVideo.play().then(() => setPlaying(true)).catch(() => undefined);
-  };
-  const stop = () => {
-    video.current?.pause();
-    if (video.current) video.current.currentTime = 0;
-    setPlaying(false);
-  };
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      play();
-    }
-  };
-  return <div className="relative aspect-square self-start overflow-hidden rounded-lg bg-[#17121f] ring-1 ring-inset ring-white/15"><div className="absolute inset-0" role="button" tabIndex={0} aria-label={`Play ${exercise.title} demonstration`} onPointerEnter={play} onPointerLeave={stop} onClick={play} onKeyDown={handleKeyDown}>{hasImage && <img src={detail?.imageUrl || undefined} alt={`${exercise.title} demonstration`} className={`absolute inset-0 size-full object-contain p-2 transition-opacity ${playing ? "opacity-0" : "opacity-100"}`}/>} {hasVideo ? <video ref={video} src={exerciseVideoUrl(detail?.videoUrl) || undefined} muted loop playsInline preload="none" className={`absolute inset-0 size-full object-cover transition-opacity ${playing || !hasImage ? "opacity-100" : "opacity-0"}`} aria-hidden="true"/> : !hasImage && <div className="grid size-full place-items-center text-center text-sm text-white/50"><div><Video className="mx-auto mb-2 size-8"/><span>{libraryLoading ? "Loading demonstration…" : "No demonstration available"}</span></div></div>}</div></div>;
+  return <div className="relative aspect-square self-start overflow-hidden rounded-lg bg-[#17121f] ring-1 ring-inset ring-white/15">
+    {detail?.videoUrl ? <VideoPreview key={detail.videoUrl} src={exerciseVideoUrl(detail.videoUrl)!} label={exercise.title} /> : <div className="grid size-full place-items-center text-center text-sm text-white/50"><div><Video className="mx-auto mb-2 size-8"/><span>{libraryLoading ? "Loading demonstration…" : "No demonstration available"}</span></div></div>}
+  </div>;
 }
 
 function CompactPlanExercise({ exercise, detail, libraryLoading, change = "normal", currentExercise, ignored, onToggleIgnore }: { exercise: HevyExercise; detail?: FitnessExercise; libraryLoading: boolean; change?: ExperimentChange; currentExercise?: HevyExercise; ignored: boolean; onToggleIgnore: () => void }) {

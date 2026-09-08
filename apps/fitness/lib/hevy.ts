@@ -46,8 +46,8 @@ export type HevyWorkout = {
 };
 
 function apiKey() {
-  const key = process.env.HEVY_API_KEY;
-  if (!key) throw new Error("HEVY_API_KEY is not configured");
+  const key = process.env.HEVY_API_TOKEN || process.env.HEVY_API_KEY;
+  if (!key) throw new Error("HEVY_API_TOKEN is not configured");
   return key;
 }
 

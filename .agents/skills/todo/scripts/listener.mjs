@@ -10,7 +10,7 @@ const repoRoot = path.resolve(import.meta.dirname, "../../../../");
 const todoistApi = "https://api.todoist.com/api/v1";
 const pollMs = Math.max(10_000, Number(process.env.TODOIST_POLL_INTERVAL_MS || 60_000));
 const projectName = (process.env.TODOIST_PROJECT_NAME || "Nomos").trim();
-const token = process.env.TODOIST_API_TOKEN || await readEnvToken();
+const token = process.env.TODOIST_API_KEY || process.env.TODOIST_API_TOKEN || await readEnvToken();
 const stateDirectory = path.join(repoRoot, ".nomos");
 const statePath = path.join(stateDirectory, "todo-worker.json");
 const readyLabel = "Ready";
@@ -21,15 +21,15 @@ const deployLabel = "Deploy";
 const maxRepairAttempts = Math.max(1, Number(process.env.TODOIST_MAX_REPAIR_ATTEMPTS || 3));
 
 if (!token) {
-  console.error("TODOIST_API_TOKEN is required. Set it before starting the listener.");
+  console.error("TODOIST_API_KEY is required. Set it before starting the listener.");
   process.exit(2);
 }
 
 async function readEnvToken() {
   try {
     const env = await readFile(path.join(repoRoot, ".env"), "utf8");
-    const match = env.match(/^\s*TODOIST_API_TOKEN\s*=\s*["']?([^"'\s#]+)["']?\s*$/m);
-    return match?.[1];
+    const match = env.match(/^\s*TODOIST_API_KEY\s*=\s*["']?([^"'\s#]+)["']?\s*$/m);
+    return match?.[1] || env.match(/^\s*TODOIST_API_TOKEN\s*=\s*["']?([^"'\s#]+)["']?\s*$/m)?.[1];
   } catch {
     return undefined;
   }

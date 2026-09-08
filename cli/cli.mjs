@@ -59,7 +59,7 @@ async function findRunnableApps(directory) {
 }
 
 function printHelp() {
-  console.log("Usage: nomos dev [-d <app>] | nomos stop | nomos deploy | nomos create-app <slug> [Display Name]");
+  console.log("Usage: nomos setup | nomos dev [-d <app>] | nomos stop | nomos deploy | nomos create-app <slug> [Display Name]");
   console.log("Starts Home, ID, Base, and every runnable app under apps/.");
   console.log("Home runs on 3000, ID on 3001, Base on 3002, and products from 3003.");
   console.log("Deploy builds every production app, validates static navigation, then deploys Hosting and Functions.");
@@ -299,6 +299,16 @@ if (command === "create-app") {
   catch (error) { console.error(error instanceof Error ? error.message : error); process.exit(1); }
   process.exit(0);
 }
+if (command === "setup") {
+  try {
+    if (process.argv.length > 3) throw new Error("Usage: nomos setup");
+    await import("./setup.mjs").then(({ setup }) => setup(repoRoot));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+  process.exit(0);
+}
 if (command === "stop") {
   await stopCommand();
   process.exit(0);
@@ -347,7 +357,7 @@ if (apps.length === 0) {
 const missingDependencies = apps.filter((app) => !existsSync(path.join(app.directory, "node_modules", ".bin", "next")));
 if (missingDependencies.length > 0) {
   console.error(`Missing Next.js dependencies for: ${missingDependencies.map((app) => app.name).join(", ")}`);
-  console.error("Run pnpm install, then retry nomos dev.");
+  console.error("Run nomos setup, then retry nomos dev.");
   process.exit(1);
 }
 

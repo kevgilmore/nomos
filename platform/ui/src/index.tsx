@@ -39,3 +39,5 @@ export { NOMOS_APPS } from "./nomos-apps";
 export { NomosProductShell, NomosHomeShell } from "./nomos-product-shell";
 export { NomosToastViewport, showNomosToast, type NomosToastOptions, type NomosToastTone } from "./nomos-toast";
 export { TemplateCatalogue, templatePages, type TemplatePageSlug } from "./template-catalogue-pages";
+
+export { VideoPreview } from "./video-preview";

@@ -14,7 +14,7 @@ apps/
 └── films/
 ```
 
-Each product is a small Next.js app. It owns `app/` routes, product-specific components, domain data access, branding, and its `app.manifest.json`.
+Each product is a small Next.js app with thin `app/` routes, product composition, and its `app.manifest.json`. Reuse platform capabilities for data access, branding, and components. All new components belong in `platform/` by default; creating an app-local component requires explicit user permission and it must be specific to that app. See the root [AGENTS.md](../../AGENTS.md).
 
 Create an app with:
 
