@@ -41,3 +41,16 @@ export { NomosToastViewport, showNomosToast, type NomosToastOptions, type NomosT
 export { TemplateCatalogue, templatePages, type TemplatePageSlug } from "./template-catalogue-pages";
 
 export { VideoPreview } from "./video-preview";
+
+export { QuarterlyQuests } from "./quarterly-quests";
+
+export { GoalsSectionPlaceholder } from "./goals-section-placeholder";
+export { Sun, Flag, ClipboardCheck } from "lucide-react";
+
+export { WeeklyReviews } from "./weekly-reviews";
+
+export { MorningManifesto } from "./morning-manifesto";
+
+export { GoalsDemo } from "./goals-demo";
+
+export { MonthlyReports } from "./monthly-reports";

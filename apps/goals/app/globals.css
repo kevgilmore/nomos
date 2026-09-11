@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
+@import "../../../platform/ui/src/quarterly-quests.css";
 @source "../../../platform/ui/src";
 html body { font-family: Figtree, sans-serif !important; }
 body { font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }

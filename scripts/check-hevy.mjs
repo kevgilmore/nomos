@@ -7,10 +7,14 @@ const root = path.resolve(import.meta.dirname, "..");
 const fileEnv = parseEnv(await readFile(path.join(root, ".env"), "utf8"));
 // Match the CLI: inherited environment variables take precedence over .env.
 const env = { ...fileEnv, ...process.env };
-const name = env.HEVY_API_TOKEN ? "HEVY_API_TOKEN" : "HEVY_API_KEY";
+const name = env.HEVY_API_KEY ? "HEVY_API_KEY" : "HEVY_API_TOKEN";
 const key = env[name];
 if (!key) {
   console.error("No Hevy credential configured.");
+  process.exit(1);
+}
+if (/^cf(?:at|ut|k)_/.test(key)) {
+  console.error(`${name} contains a Cloudflare credential, not a Hevy API key. No request sent.`);
   process.exit(1);
 }
 console.log(`Variable: ${name}`);

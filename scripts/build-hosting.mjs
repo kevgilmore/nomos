@@ -4,7 +4,11 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 
 const repoRoot = path.resolve(import.meta.dirname, "..");
-const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const packageManager = JSON.parse(process.env.NOMOS_PACKAGE_MANAGER || JSON.stringify(
+  process.platform === "win32"
+    ? { command: "corepack.cmd", prefix: ["pnpm"] }
+    : { command: "corepack", prefix: ["pnpm"] },
+));
 const productionEnvironment = { ...process.env, NEXT_PUBLIC_NOMOS_ENV: "production" };
 const appEntries = (await readdir(path.join(repoRoot, "apps"), { withFileTypes: true }))
   .filter((entry) => entry.isDirectory() && !["home", "fitness"].includes(entry.name))
@@ -69,12 +73,14 @@ async function validateHostingConfig() {
   if (fitness.rewrites?.some((rewrite) => rewrite.source === "**")) throw new Error("Production deploy check failed: Fitness Hosting must not have a catch-all rewrite");
 }
 
-await run(pnpmCommand, ["--filter", "@nomos/home", "build"]);
-await run(pnpmCommand, ["--filter", "@nomos/base", "build"]);
-await run(pnpmCommand, ["--filter", "@nomos/fitness", "build"]);
-for (const app of appEntries) await run(pnpmCommand, ["--filter", `@nomos/${app}`, "build"]);
-await run(pnpmCommand, ["--filter", "@nomos/id", "build"]);
+await run(packageManager.command, [...packageManager.prefix, "--filter", "@nomos/home", "build"]);
+await run(packageManager.command, [...packageManager.prefix, "--filter", "@nomos/base", "build"]);
+await run(packageManager.command, [...packageManager.prefix, "--filter", "@nomos/fitness", "build"]);
+for (const app of appEntries) await run(packageManager.command, [...packageManager.prefix, "--filter", `@nomos/${app}`, "build"]);
+await run(packageManager.command, [...packageManager.prefix, "--filter", "@nomos/id", "build"]);
 await run(process.execPath, [path.join(repoRoot, "scripts", "prepare-hosting.mjs")]);
+await run("npm", ["--prefix", "platform/functions", "ci"]);
+await run("npm", ["--prefix", "apps/fitness/functions", "ci"]);
 await run("npm", ["--prefix", "platform/functions", "run", "build"]);
 await run("npm", ["--prefix", "apps/fitness/functions", "run", "build"]);
 await validateFitnessExport();

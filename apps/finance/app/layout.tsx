@@ -1,3 +1,4 @@
+export { nomosViewport as viewport } from "@nomos/ui/viewport";
 import type { Metadata } from "next";
 import { Figtree } from "next/font/google";
 import "./globals.css";

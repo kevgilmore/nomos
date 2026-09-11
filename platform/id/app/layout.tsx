@@ -1,4 +1,5 @@
-import type { Metadata, Viewport } from "next";
+export { nomosViewport as viewport } from "@nomos/ui/viewport";
+import type { Metadata } from "next";
 import { Figtree } from "next/font/google";
 import "./globals.css";
 
@@ -8,13 +9,7 @@ export const metadata: Metadata = {
   icons: { icon: "/nomos-mark.png", apple: "/nomos-mark.png" },
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  viewportFit: "cover",
-  colorScheme: "dark",
-  themeColor: "#0b0b0d",
-};
+
 
 const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree", display: "swap" });
 

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
 @source "../../../platform/ui/src";
 html body { font-family: Figtree, sans-serif !important; }
 body { font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }

@@ -46,8 +46,11 @@ export type HevyWorkout = {
 };
 
 function apiKey() {
-  const key = process.env.HEVY_API_TOKEN || process.env.HEVY_API_KEY;
-  if (!key) throw new Error("HEVY_API_TOKEN is not configured");
+  const key = process.env.HEVY_API_KEY || process.env.HEVY_API_TOKEN;
+  if (!key) throw new Error("HEVY_API_KEY is not configured");
+  if (/^cf(?:at|ut|k)_/.test(key)) {
+    throw new Error("HEVY_API_KEY contains a Cloudflare credential. Set it to your Hevy API key; keep Cloudflare tokens in CLOUDFLARE_API_TOKEN.");
+  }
   return key;
 }
 

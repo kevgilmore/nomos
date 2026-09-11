@@ -183,10 +183,15 @@ async function startNgrokTunnel(appName) {
 
 async function deployCommand() {
   const node = process.execPath;
+  const packageManager = process.env.npm_execpath
+    ? { command: process.execPath, prefix: [process.env.npm_execpath] }
+    : process.platform === "win32"
+      ? { command: "corepack.cmd", prefix: ["pnpm"] }
+      : { command: "corepack", prefix: ["pnpm"] };
   await new Promise((resolve, reject) => {
     const child = spawn(node, [path.join(repoRoot, "scripts", "build-hosting.mjs")], {
       cwd: repoRoot,
-      env: { ...process.env, NEXT_PUBLIC_NOMOS_ENV: "production" },
+      env: { ...process.env, NOMOS_PACKAGE_MANAGER: JSON.stringify(packageManager), NEXT_PUBLIC_NOMOS_ENV: "production" },
       stdio: "inherit",
     });
     child.once("error", reject);
@@ -196,10 +201,10 @@ async function deployCommand() {
       else resolve();
     });
   });
-  const firebaseCommand = process.platform === "win32" ? "firebase.cmd" : "firebase";
+  const firebaseCommand = process.platform === "win32" ? "npx.cmd" : "npx";
   const firebaseConfig = JSON.parse(readFileSync(path.join(repoRoot, "firebase.json"), "utf8"));
   const hostingTargets = (firebaseConfig.hosting ?? []).map((site) => site.target).filter((target) => target && target !== "default");
-  execFileSync(firebaseCommand, ["deploy", "--only", [...hostingTargets.map((target) => `hosting:${target}`), "functions"].join(",")], { cwd: repoRoot, stdio: "inherit", env: { ...process.env, NEXT_PUBLIC_NOMOS_ENV: "production" } });
+  execFileSync(firebaseCommand, ["--yes", "firebase-tools", "deploy", "--only", [...hostingTargets.map((target) => `hosting:${target}`), "functions"].join(",")], { cwd: repoRoot, stdio: "inherit", env: { ...process.env, NEXT_PUBLIC_NOMOS_ENV: "production" } });
 }
 
 function portIsBusy(port) {

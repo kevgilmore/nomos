@@ -1,6 +1,7 @@
 import process from "node:process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { parseEnv } from "node:util";
 
 const slug = (process.argv[2] || "").trim().toLowerCase();
 if (!/^[a-z][a-z0-9-]*$/.test(slug)) {
@@ -9,11 +10,9 @@ if (!/^[a-z][a-z0-9-]*$/.test(slug)) {
 }
 
 const envFile = await readFile(path.resolve(import.meta.dirname, "../.env"), "utf8").catch(() => "");
-const fileEnv = Object.fromEntries(envFile.split(/\r?\n/).flatMap((line) => {
-  const match = line.match(/^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$/);
-  return match ? [[match[1], match[2].replace(/^['"]|['"]$/g, "")]] : [];
-}));
-const token = process.env.CLOUDFLARE_API_TOKEN || process.env.CF_API_TOKEN || fileEnv.API_TOKEN;
+const fileEnv = parseEnv(envFile);
+const env = { ...fileEnv, ...process.env };
+const token = env.CLOUDFLARE_API_TOKEN || env.CF_API_TOKEN || fileEnv.API_TOKEN;
 if (!token) throw new Error("Cloudflare DNS is not configured: set CLOUDFLARE_API_TOKEN (or CF_API_TOKEN) with Zone DNS Edit access for nomos.codes.");
 
 const api = "https://api.cloudflare.com/client/v4";
@@ -63,7 +62,7 @@ async function firebaseCertificateChallenge() {
   throw new Error(`Firebase has not provided an ACME certificate challenge for ${hostname} yet.`);
 }
 
-const zoneId = process.env.CLOUDFLARE_ZONE_ID || process.env.CF_ZONE_ID || (await cloudflare("/zones?name=nomos.codes&status=active&per_page=1"))[0]?.id;
+const zoneId = env.CLOUDFLARE_ZONE_ID || env.CF_ZONE_ID || (await cloudflare("/zones?name=nomos.codes&status=active&per_page=1"))[0]?.id;
 if (!zoneId) throw new Error("Cloudflare zone nomos.codes was not found for this token.");
 
 const records = await cloudflare(`/zones/${zoneId}/dns_records?name=${encodeURIComponent(hostname)}&per_page=100`);

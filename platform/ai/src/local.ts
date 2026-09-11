@@ -1,3 +1,4 @@
+import { importPlanner } from "./planner-import";
 import { getAdminCollection, getAdminFirestore } from "@nomos/db/admin";
 import { listOpenAiModels, type AiModelUsage } from "./server";
 
@@ -180,6 +181,8 @@ export async function handleLocalAiRequest(request: LocalAiRequest): Promise<Loc
   }
   if (!validAppId(request.appId)) return { status: 400, body: { error: "A valid appId is required" } };
   const appId = request.appId;
+
+  if (request.method === "POST" && path === "/planner-import" && appId === "goals") return importPlanner(request.body);
 
   const conversations = getAdminCollection(`users/${request.userId}/apps/${appId}/conversations`);
   if (request.method === "GET" && path === "/conversations") {

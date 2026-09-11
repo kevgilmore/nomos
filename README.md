@@ -30,7 +30,7 @@ your Todoist API token (keep existing values):
 TODOIST_API_KEY=your_todoist_api_key
 ```
 
-This file is Git-ignored. Optional: add `OPENAI_API_KEY` and `HEVY_API_TOKEN` for
+This file is Git-ignored. Optional: add `OPENAI_API_KEY` and `HEVY_API_KEY` for
 AI and Hevy features. Ordinary local development needs no API keys.
 
 Install the CLI once from the repository root (Ubuntu, WSL, or macOS):
