@@ -54,7 +54,8 @@ to scaffold every app.
   shared configuration; do not hard-code separate module lists.
 - The current registry is generated from `apps/*/app.manifest.json` by
   `pnpm sync:apps`. Do not hand-edit `platform/data/src/apps.generated.ts`.
-- Hosting targets are GitHub Pages or GCP, with GCP providing backend APIs,
+- Firebase Hosting is the established deployment target for frontend apps; use the repository CLI command nomos deploy for production deployments. Before deploying or choosing an infrastructure tool, read the relevant docs under docs/platform and inspect firebase.json and .firebaserc. Do not substitute a generic hosting platform or tool based only on what is available in the session.
+- Firebase Hosting serves the static frontend targets; GCP provides backend APIs, databases, and storage.
   databases, and storage. Keep reusable infrastructure and Cloudflare DNS
   configuration in `platform/infra`; use reusable Terraform modules where
   applicable. Follow the existing target's deployment workflow.
