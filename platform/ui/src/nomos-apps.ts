@@ -1,7 +1,7 @@
-import { Blocks, CalendarDays, CircleDollarSign, Dumbbell, Target } from "lucide-react";
+import { Blocks, CalendarDays, CircleDollarSign, Dumbbell, Swords } from "lucide-react";
 import { generatedNomosApps } from "./nomos-apps.generated";
 
-const knownIcons = { fitness: Dumbbell, template: Blocks, finance: CircleDollarSign, goals: Target, time: CalendarDays };
+const knownIcons = { fitness: Dumbbell, template: Blocks, finance: CircleDollarSign, goals: Swords, time: CalendarDays };
 function isProductionHost() {
   if (typeof window === "undefined") return false;
   const hostname = window.location.hostname;
