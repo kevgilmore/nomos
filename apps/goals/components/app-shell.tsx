@@ -1,6 +1,5 @@
 "use client";
-import { Swords } from "lucide-react";
-import { NomosProductShell, GoalsDemo, Sun, ClipboardCheck, FileText } from "@nomos/ui";
+import { NomosProductShell, GoalsDemo, Sun, ClipboardCheck, FileText, Swords } from "@nomos/ui";
 const navigation = [
   { slug: "today", label: "Today", href: "/today/", icon: Sun },
   { slug: "week", label: "Week", href: "/week/", icon: ClipboardCheck },

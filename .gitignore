@@ -16,6 +16,7 @@
 **/coverage/
 **/.turbo/
 **/.cache/
+.firebase/hosting.*.cache
 *.tsbuildinfo
 
 .nomos-dev
@@ -23,3 +24,6 @@
 .nomos-local-auth.json*
 platform/functions/src/db.ts
 platform/functions/lib/
+
+# Separate repository at the workspace root.
+/template/

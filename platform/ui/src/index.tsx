@@ -45,7 +45,7 @@ export { VideoPreview } from "./video-preview";
 export { QuarterlyQuests } from "./quarterly-quests";
 
 export { GoalsSectionPlaceholder } from "./goals-section-placeholder";
-export { Sun, Flag, ClipboardCheck } from "lucide-react";
+export { Sun, Flag, ClipboardCheck, Swords } from "lucide-react";
 
 export { WeeklyReviews } from "./weekly-reviews";
 
