@@ -1,0 +1,9 @@
+{
+  "slug": "admin",
+  "name": "Admin",
+  "href": "http://localhost:3008",
+  "productionHref": "https://admin.nomos.codes",
+  "icon": "app",
+  "discoverable": true,
+  "description": "Personal administration tools."
+}

@@ -2,6 +2,13 @@
 export type PlatformApp = { slug: string; name: string; href: string; productionHref: string; icon: string };
 export const platformApps: PlatformApp[] = [
   {
+    "slug": "admin",
+    "name": "Admin",
+    "href": "http://localhost:3008",
+    "productionHref": "https://admin.nomos.codes",
+    "icon": "app"
+  },
+  {
     "slug": "finance",
     "name": "Finance",
     "href": "http://localhost:3005",
@@ -27,6 +34,13 @@ export const platformApps: PlatformApp[] = [
     "name": "Home",
     "href": "http://localhost:3000",
     "productionHref": "https://nomos.codes",
+    "icon": "app"
+  },
+  {
+    "slug": "hustle",
+    "name": "Hustle",
+    "href": "http://localhost:3009",
+    "productionHref": "https://hustle.nomos.codes",
     "icon": "app"
   },
   {

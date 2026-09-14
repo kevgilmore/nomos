@@ -101,3 +101,11 @@ changes. Months without records show an empty report.
 The labelled demo workspace seeds missing current-day, current-quarter and
 recent weekly records once (`nomos.goals.demo.v1`), preserving existing entries.
 Reports use those records directly, so demo figures agree across pages.
+
+## Admin
+
+Admin is a minimal workspace at `https://admin.nomos.codes`, created with
+`pnpm create:app admin Admin`. Its root route is empty and its root layout
+composes `NomosProductShell` from `@nomos/ui` for shared authentication,
+navigation, theme, assistant, and safe-area handling. No admin features are
+implemented yet. Production updates use `nomos deploy`.

@@ -28,6 +28,12 @@
         ],
         "template": [
           "nomos-template"
+        ],
+        "admin": [
+          "nomos-admin"
+        ],
+        "hustle": [
+          "nomos-hustle"
         ]
       }
     }

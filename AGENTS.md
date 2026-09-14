@@ -61,6 +61,17 @@ to scaffold every app.
   applicable. Follow the existing target's deployment workflow.
 - Keep credentials and privileged backend clients server-side. Do not include
   secrets in browser bundles, manifests, or committed configuration.
+- Each app's `productionHref` is the user-facing URL. After creating a Hosting
+  target, run `pnpm configure:dns <app-slug>` and verify
+  `https://<app-slug>.nomos.codes/`; `*.web.app` is only a Firebase backing URL
+  and is not a substitute for the custom domain.
+- Product subdomains must use DNS-only CNAME records to their Firebase Hosting
+  site (`<slug>.nomos.codes CNAME nomos-<slug>.web.app`). Never use the shared
+  `199.36.158.100` A record for product subdomains.
+- Treat a new custom domain as ready only when Firebase reports
+  `dnsStatus: DNS_MATCH` and `certStatus: CERT_ACTIVE`, and the real
+  `https://<slug>.nomos.codes` URL serves the app. `DOMAIN_ACTIVE` alone is
+  insufficient while certificate provisioning is still in progress.
 
 ## Development and validation
 
@@ -68,6 +79,16 @@ to scaffold every app.
   version declared in root `package.json` and Node.js 22+.
 - For this WSL checkout, run project development commands inside Ubuntu/Bash.
   See `README.md` for setup; preserve existing environment files.
+- When working from the ChatGPT/Codex desktop app, its command runner may be a
+  Windows shell even though this checkout is in WSL. Run repository commands
+  through WSL explicitly so Node, pnpm, filesystem links, and workspace paths
+  use the Linux environment:
+  `wsl.exe -d Ubuntu --cd /home/kev/code/nomos -- bash -lc 'source "$HOME/.nvm/nvm.sh"; <command>'`.
+- If Linux Node/pnpm are not installed, install Node 22+ with nvm inside WSL,
+  then enable the workspace version with `corepack prepare pnpm@11.24.0
+  --activate`. Do not run pnpm against the `\\wsl.localhost` UNC path from a
+  Windows shell; it can select the wrong working directory or fail while
+  cleaning `node_modules`.
 - Use the `dev` and `stop` skills for starting and stopping local servers.
 - Available root checks: `pnpm lint`, `pnpm typecheck`, `pnpm build:all`.
   `pnpm build` currently builds fitness only, not the whole workspace.

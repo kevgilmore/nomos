@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@nomos/ui/document.css";
 @source "../../ui/src";
 html body { font-family: Figtree, sans-serif !important; }
 @custom-variant dark (&:is(.dark *));
@@ -19,8 +20,8 @@ html body { font-family: Figtree, sans-serif !important; }
   --secondary: #24212b; --secondary-foreground: #f4f1f8; --accent: #292333; --accent-foreground: #f0eaf8; --ring: #a78bda;
 }
 * { box-sizing: border-box; border-color: var(--border); }
-html, body { min-height: 100%; background: var(--card); }
-body { min-height: 100dvh; margin: 0; color: var(--foreground); font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }
+
+body { margin: 0; color: var(--foreground); font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }
 button, a { -webkit-tap-highlight-color: transparent; }
 :focus-visible { outline: 3px solid color-mix(in srgb, var(--ring) 55%, transparent); outline-offset: 2px; }
 header h1 { min-width: 0; flex: 1; }

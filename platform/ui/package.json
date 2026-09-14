@@ -4,7 +4,8 @@
   "private": true,
   "exports": {
     ".": "./src/index.tsx",
-    "./viewport": "./src/viewport.ts"
+    "./viewport": "./src/viewport.ts",
+    "./document.css": "./src/document.css"
   },
   "dependencies": {
     "@nomos/ai": "workspace:*",

@@ -1,0 +1,8 @@
+{
+  "slug": "hustle",
+  "name": "Hustle",
+  "href": "http://localhost:3009",
+  "productionHref": "https://hustle.nomos.codes",
+  "icon": "app",
+  "discoverable": true
+}

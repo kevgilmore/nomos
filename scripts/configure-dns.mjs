@@ -66,19 +66,19 @@ const zoneId = env.CLOUDFLARE_ZONE_ID || env.CF_ZONE_ID || (await cloudflare("/z
 if (!zoneId) throw new Error("Cloudflare zone nomos.codes was not found for this token.");
 
 const records = await cloudflare(`/zones/${zoneId}/dns_records?name=${encodeURIComponent(hostname)}&per_page=100`);
-const desiredIp = "199.36.158.100";
-const aRecord = records.find((item) => item.name === hostname && item.type === "A");
+const desiredTarget = `${hostingSite}.web.app`;
+const cnameRecord = records.find((item) => item.name === hostname && item.type === "CNAME");
 const conflictingRecord = records.find((item) => item.name === hostname && !["A", "CNAME"].includes(item.type));
 if (conflictingRecord) throw new Error(`Cloudflare DNS has an incompatible ${conflictingRecord.type} record for ${hostname}.`);
-if (aRecord?.content === desiredIp) {
-  console.log(`Cloudflare DNS already configured: ${hostname} -> ${desiredIp}`);
+if (cnameRecord?.content === desiredTarget) {
+  console.log(`Cloudflare DNS already configured: ${hostname} -> ${desiredTarget}`);
 } else {
   for (const record of records.filter((item) => item.name === hostname && ["A", "CNAME"].includes(item.type))) {
     await cloudflare(`/zones/${zoneId}/dns_records/${record.id}`, { method: "DELETE" });
   }
-  const payload = { type: "A", name: hostname, content: desiredIp, ttl: 300, proxied: false };
+  const payload = { type: "CNAME", name: hostname, content: desiredTarget, ttl: 300, proxied: false };
   await cloudflare(`/zones/${zoneId}/dns_records`, { method: "POST", body: JSON.stringify(payload) });
-  console.log(`${aRecord ? "Updated" : "Created"} Cloudflare DNS: ${hostname} -> ${desiredIp}`);
+  console.log(`${cnameRecord ? "Updated" : "Created"} Cloudflare DNS: ${hostname} -> ${desiredTarget}`);
 }
 
 const challenge = await firebaseCertificateChallenge();

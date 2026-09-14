@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@nomos/ui/document.css";
 @custom-variant dark (&:is(.dark *));
 @source "../../ui/src";
 html body { font-family: Figtree, sans-serif !important; }
@@ -18,8 +19,8 @@ html body { font-family: Figtree, sans-serif !important; }
 }
 
 * { box-sizing: border-box; border-color: var(--border); }
-html, body { min-height: 100%; background: var(--background); }
-body { min-height: 100dvh; margin: 0; color: var(--foreground); font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }
+
+body { margin: 0; color: var(--foreground); font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }
 button { -webkit-tap-highlight-color: transparent; }
 
 button:not(:disabled), [role="button"]:not([aria-disabled="true"]) { cursor: pointer; }

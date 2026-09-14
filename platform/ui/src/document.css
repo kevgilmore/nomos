@@ -1,0 +1,10 @@
+/* Match the shell surface in Safari safe areas and rubber-band overscroll.
+   Keep this document contract shared by every app, including new apps. */
+html, body {
+  min-height: 100%;
+  background: var(--card);
+}
+
+body {
+  min-height: 100dvh;
+}

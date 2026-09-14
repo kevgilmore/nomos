@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@nomos/ui/document.css";
 @custom-variant dark (&:is(.dark *));
 @source "../../../platform/ui/src";
 html body { font-family: Figtree, sans-serif !important; }
@@ -6,4 +7,4 @@ body { font-family: var(--font-figtree), Arial, Helvetica, sans-serif; }
 html body { font-family: Figtree, sans-serif !important; }
 :root { color-scheme: light; --background:#f7f6fa; --foreground:#19171f; --card:#fff; --card-foreground:#19171f; --popover:#fff; --popover-foreground:#19171f; --muted:#efedf3; --muted-foreground:#6d6878; --border:#e1dee7; --input:#e1dee7; --primary:#33254f; --primary-foreground:#fff; --accent:#ebe5f7; --accent-foreground:#302047; --ring:#7655a6; --radius:.875rem; }
 .dark { color-scheme: dark; --background:#111014; --foreground:#f4f1f8; --card:#19171f; --card-foreground:#f4f1f8; --popover:#19171f; --popover-foreground:#f4f1f8; --muted:#24212b; --muted-foreground:#aaa3b5; --border:#302c39; --input:#383241; --primary:#7655a6; --primary-foreground:#fff; --accent:#292333; --accent-foreground:#f0eaf8; --ring:#a78bda; }
-* { box-sizing:border-box; border-color:var(--border); } html,body { min-height:100%; background:var(--background); } body { margin:0; color:var(--foreground); font-family:Arial,Helvetica,sans-serif; } button:not(:disabled), [role="button"]:not([aria-disabled="true"]) { cursor:pointer; } button:disabled, [role="button"][aria-disabled="true"] { cursor:not-allowed; } :focus-visible { outline:3px solid color-mix(in srgb,var(--ring) 55%,transparent); outline-offset:2px; }
+* { box-sizing:border-box; border-color:var(--border); }  body { margin:0; color:var(--foreground); font-family:Arial,Helvetica,sans-serif; } button:not(:disabled), [role="button"]:not([aria-disabled="true"]) { cursor:pointer; } button:disabled, [role="button"][aria-disabled="true"] { cursor:not-allowed; } :focus-visible { outline:3px solid color-mix(in srgb,var(--ring) 55%,transparent); outline-offset:2px; }

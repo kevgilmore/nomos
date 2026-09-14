@@ -27,6 +27,14 @@ works on edge-to-edge devices. The app generator uses the same export.
 scrollable navigation beyond that, and bottom content clearance including the
 home-indicator inset. Keep these defaults in the platform rather than app CSS.
 
+Every app imports `@nomos/ui/document.css` after Tailwind in its global CSS.
+This shares Fitness's document surface (`--card`) and minimum dynamic viewport
+height, so Safari safe areas and overscroll match the shell. Do not override
+the document background per app. Header height and top padding include the
+safe-area inset at every breakpoint, including tablet widths. When validating,
+check light/dark themes, portrait/landscape, and scrolling with both zero and
+nonzero insets; simulated insets do not replace a real iOS Safari check.
+
 ## Todoist worker failure reporting
 
 The listener captures the worker's final answer separately from tool output and

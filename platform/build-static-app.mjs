@@ -9,8 +9,9 @@ const production = process.env.NEXT_PUBLIC_NOMOS_ENV !== "development";
 let hidden = false;
 
 try {
-  await access(localApiRoute);
-  if (production) {
+  let hasLocalApiRoute = true;
+  try { await access(localApiRoute); } catch { hasLocalApiRoute = false; }
+  if (production && hasLocalApiRoute) {
     await rename(localApiRoute, hiddenApiRoute);
     hidden = true;
   }

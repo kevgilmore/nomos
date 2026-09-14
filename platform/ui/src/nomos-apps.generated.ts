@@ -2,6 +2,13 @@
 export type NomosGeneratedApp = { slug: string; label: string; localHref: string; productionHref: string; icon: string };
 export const generatedNomosApps: NomosGeneratedApp[] = [
   {
+    "slug": "admin",
+    "label": "Admin",
+    "localHref": "http://localhost:3008",
+    "productionHref": "https://admin.nomos.codes",
+    "icon": "app"
+  },
+  {
     "slug": "finance",
     "label": "Finance",
     "localHref": "http://localhost:3005",
@@ -27,6 +34,13 @@ export const generatedNomosApps: NomosGeneratedApp[] = [
     "label": "Home",
     "localHref": "http://localhost:3000",
     "productionHref": "https://nomos.codes",
+    "icon": "app"
+  },
+  {
+    "slug": "hustle",
+    "label": "Hustle",
+    "localHref": "http://localhost:3009",
+    "productionHref": "https://hustle.nomos.codes",
     "icon": "app"
   },
   {

@@ -338,7 +338,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
       </nav>
     </aside>}
     <div className={`min-w-0 bg-[var(--card)] ${showNavigation ? "lg:col-start-2" : ""}`}>
-      <header className="sticky top-0 z-30 flex h-[calc(4.5rem+env(safe-area-inset-top))] items-center bg-[color-mix(in_srgb,var(--card)_90%,transparent)] pl-5 pr-4 pt-[env(safe-area-inset-top)] backdrop-blur md:px-7 lg:h-18 lg:pt-0">
+      <header className="sticky top-0 z-30 flex h-[calc(4.5rem+env(safe-area-inset-top,0px))] items-center bg-[color-mix(in_srgb,var(--card)_90%,transparent)] pl-5 pr-4 pt-[env(safe-area-inset-top,0px)] backdrop-blur md:px-7">
         <h1 className="min-w-0 flex-1 truncate text-2xl font-semibold tracking-[-.02em] md:text-xl">{title}</h1>
         <div className="ml-auto flex shrink-0 items-center gap-2">
           <ThemeToggle />
