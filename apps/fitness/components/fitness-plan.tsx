@@ -285,7 +285,7 @@ function WorkoutBanner({ routines, workouts, loading, error }: { routines: HevyR
 
 function ExerciseMedia({ exercise, detail, libraryLoading }: { exercise: HevyExercise; detail?: FitnessExercise; libraryLoading: boolean }) {
   return <div className="relative aspect-square self-start overflow-hidden rounded-lg bg-[#17121f] ring-1 ring-inset ring-white/15">
-    {detail?.videoUrl ? <VideoPreview key={detail.videoUrl} src={exerciseVideoUrl(detail.videoUrl)!} label={exercise.title} /> : <div className="grid size-full place-items-center text-center text-sm text-white/50"><div><Video className="mx-auto mb-2 size-8"/><span>{libraryLoading ? "Loading demonstration…" : "No demonstration available"}</span></div></div>}
+    {detail?.videoUrl ? <VideoPreview key={detail.videoUrl} src={exerciseVideoUrl(detail.videoUrl)!} poster={detail.imageUrl} label={exercise.title} /> : detail?.imageUrl ? <img src={detail.imageUrl} alt={`${exercise.title} demonstration`} className="size-full object-cover" /> : <div className="grid size-full place-items-center text-center text-sm text-white/50"><div><Video className="mx-auto mb-2 size-8"/><span>{libraryLoading ? "Loading demonstration…" : "No demonstration available"}</span></div></div>}
   </div>;
 }
 

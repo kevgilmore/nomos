@@ -71,3 +71,22 @@ When invoked, search the full `Nomos` project hierarchy, including subtasks at a
 The persistent listener is implemented at `.agents/skills/todo/scripts/listener.mjs`. A `$todo` listener invocation must start it directly with `node .agents/skills/todo/scripts/listener.mjs` and `TODOIST_API_KEY` available. It polls every 60 seconds by default (`TODOIST_POLL_INTERVAL_MS` can override this), holds a PID/heartbeat lease, never starts a second task while one is running, resumes the leased `In progress` task after a worker restart, and checks `In review` tasks for new `fix` comments. It uses the existing `Failed` and `Deploy` labels; it must not create labels. Validation failures stay `In progress` while the worker repairs and retries them. Only exhausted repair attempts receive `Failed`; changing a failed task back to `Ready` requests a fresh run. `Deploy` tasks are approved/deploy-ready and are not processed by the repair queue.
 
 The worker remains alive after the agent turn because `$todo` launches it as a detached background process. There is one mode only: it drains the current queue, waits 60 seconds when idle, and keeps listening for new `Ready` tasks until explicitly stopped.
+
+
+## Explicit retry label
+
+The existing `retry` label requests another full attempt. Keep `retry` while
+working; run the same implementation, repair, validation and screenshot workflow
+as `In progress`. Resume active work before claiming a new retry, then prioritise
+retry over new Ready tasks. At retry start, archive all existing comments locally,
+retain their instructions and attachment references in worker context, replace
+those comments in Todoist with one short LLM-written summary, and leave later
+comments untouched. New completion/failure reports follow the normal rules.
+Move to In review only with passing checks and screenshot proof; otherwise Failed
+after repair exhaustion. Quota pauses retain the active label.
+
+The listener posts a short Picked up acknowledgement when work starts and updates
+that same tracked comment for quota pauses, success (including screenshot), or
+failure. Reuse it across resumed attempts and fix passes. Retry cleanup adopts
+its replacement summary as that status comment. Recreate only if it was deleted;
+do not modify human comments.

@@ -8,7 +8,7 @@ import { pages } from "@/lib/navigation";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    if (window.location.pathname.startsWith("/plan")) return;
+    if (window.location.pathname.startsWith("/plan") || window.location.pathname.startsWith("/exercises")) return;
     try {
       const cached = JSON.parse(window.localStorage.getItem(FITNESS_AGENT_CONTEXT_KEY) || "null") as { savedAt?: string; version?: number } | null;
       if (cached?.version === FITNESS_AGENT_CONTEXT_VERSION && cached.savedAt && Date.now() - Date.parse(cached.savedAt) < 5 * 60 * 1000) return;

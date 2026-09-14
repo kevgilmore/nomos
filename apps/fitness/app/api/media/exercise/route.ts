@@ -2,17 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAllowedExerciseMediaUrl } from "@/lib/media";
 
 export const dynamic = "force-dynamic";
-
 const forwardedRequestHeaders = ["range", "if-range", "if-none-match"];
 const forwardedResponseHeaders = ["accept-ranges", "cache-control", "content-length", "content-range", "content-type", "etag", "last-modified"];
-
-export async function GET(request: NextRequest) {
-  return proxy(request);
-}
-
-export async function HEAD(request: NextRequest) {
-  return proxy(request);
-}
 
 async function proxy(request: NextRequest) {
   const url = request.nextUrl.searchParams.get("url");
@@ -37,3 +28,6 @@ async function proxy(request: NextRequest) {
     return NextResponse.json({ error: "Exercise media is unavailable" }, { status: 502 });
   }
 }
+
+export const GET = proxy;
+export const HEAD = proxy;

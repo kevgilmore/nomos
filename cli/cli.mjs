@@ -5,6 +5,7 @@ import { execFileSync } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import net from "node:net";
+import { deploymentReporter, deploymentMessage } from "./deploy-report.mjs";
 import path from "node:path";
 import process from "node:process";
 
@@ -182,29 +183,38 @@ async function startNgrokTunnel(appName) {
 }
 
 async function deployCommand() {
+  let reporter;
+  try { reporter = await deploymentReporter(); }
+  catch (error) { console.error(`[deploy] ${error.message}; deployment will continue without ticket updates.`); }
+  let diagnostic = "";
+  async function run(command, args, env) {
+    await new Promise((resolve, reject) => {
+      const child = spawn(command, args, { cwd: repoRoot, env, stdio: ["inherit", "pipe", "pipe"] });
+      child.stdout.on("data", chunk => { process.stdout.write(chunk); diagnostic = (diagnostic + chunk.toString()).slice(-24000); });
+      child.stderr.on("data", chunk => { process.stderr.write(chunk); diagnostic = (diagnostic + chunk.toString()).slice(-24000); });
+      child.once("error", reject);
+      child.once("close", (code, signal) => code === 0 ? resolve() : reject(new Error(`Deployment step ${command} failed (${signal || code}).`)));
+    });
+  }
+  let failure;
+  try {
   const node = process.execPath;
   const packageManager = process.env.npm_execpath
     ? { command: process.execPath, prefix: [process.env.npm_execpath] }
     : process.platform === "win32"
       ? { command: "corepack.cmd", prefix: ["pnpm"] }
       : { command: "corepack", prefix: ["pnpm"] };
-  await new Promise((resolve, reject) => {
-    const child = spawn(node, [path.join(repoRoot, "scripts", "build-hosting.mjs")], {
-      cwd: repoRoot,
-      env: { ...process.env, NOMOS_PACKAGE_MANAGER: JSON.stringify(packageManager), NEXT_PUBLIC_NOMOS_ENV: "production" },
-      stdio: "inherit",
-    });
-    child.once("error", reject);
-    child.once("exit", (code, signal) => {
-      if (signal) reject(new Error(`Production build terminated with ${signal}`));
-      else if (code) reject(new Error(`Production build exited with code ${code}`));
-      else resolve();
-    });
-  });
+  await run(node, [path.join(repoRoot, "scripts", "build-hosting.mjs")], { ...process.env, NOMOS_PACKAGE_MANAGER: JSON.stringify(packageManager), NEXT_PUBLIC_NOMOS_ENV: "production" });
   const firebaseCommand = process.platform === "win32" ? "npx.cmd" : "npx";
   const firebaseConfig = JSON.parse(readFileSync(path.join(repoRoot, "firebase.json"), "utf8"));
   const hostingTargets = (firebaseConfig.hosting ?? []).map((site) => site.target).filter((target) => target && target !== "default");
-  execFileSync(firebaseCommand, ["--yes", "firebase-tools", "deploy", "--only", [...hostingTargets.map((target) => `hosting:${target}`), "functions"].join(",")], { cwd: repoRoot, stdio: "inherit", env: { ...process.env, NEXT_PUBLIC_NOMOS_ENV: "production" } });
+  await run(firebaseCommand, ["--yes", "firebase-tools", "deploy", "--only", [...hostingTargets.map((target) => `hosting:${target}`), "functions"].join(",")], { ...process.env, NEXT_PUBLIC_NOMOS_ENV: "production" });
+  } catch (error) { failure = error; }
+  if (reporter?.enabled) {
+    try { await reporter.finish(await deploymentMessage(failure, diagnostic, repoRoot)); }
+    catch (error) { console.error(`[deploy] Deployment ${failure ? "failed" : "succeeded"}, but ticket notification failed: ${error.message}`); }
+  }
+  if (failure) throw failure;
 }
 
 function portIsBusy(port) {

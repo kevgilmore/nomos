@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {parseWorkerProof,verifyScreenshot} from './worker-proof.mjs';
+for(const line of ['Screenshot: /tmp/proof.png','Screenshot path: `/tmp/proof.png`','Screenshot: [proof](/tmp/proof.png)','**Screenshot path**: `/tmp/my proof.png`'])test(line,()=>{const r=parseWorkerProof(line+'\nRESULT: PASS');assert.equal(r.passed,true);assert.ok(r.screenshotPath.endsWith('.png'));});
+test('rejects conflicting results and relative paths',()=>{assert.equal(parseWorkerProof('RESULT: PASS\nRESULT: BLOCKED').passed,false);assert.equal(parseWorkerProof('Screenshot: relative.png\nRESULT: PASS').screenshotPath,null);});
+test('missing proof explains cause',async()=>{await assert.rejects(verifyScreenshot(null),/absolute PNG/);await assert.rejects(verifyScreenshot('/tmp/nonexistent-proof-12345.png'),/unreadable/);});

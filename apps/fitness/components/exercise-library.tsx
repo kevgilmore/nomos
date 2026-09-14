@@ -18,7 +18,7 @@ function FilterTabs({ label, value, options, onChange }: { label: string; value:
 
 function ExerciseVideo({ exercise }: ExerciseVideoProps) {
   return <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#17121f]">
-    {exercise.videoUrl ? <VideoPreview key={exercise.videoUrl} src={exerciseVideoUrl(exercise.videoUrl)!} label={exercise.name} /> : <div className="grid size-full place-items-center text-white/40"><Video className="size-8" aria-label="No demonstration available" /></div>}
+    {exercise.videoUrl ? <VideoPreview key={exercise.videoUrl} src={exerciseVideoUrl(exercise.videoUrl)!} poster={exercise.imageUrl} label={exercise.name} /> : exercise.imageUrl ? <img src={exercise.imageUrl} alt={`${exercise.name} demonstration`} className="size-full object-cover" /> : <div className="grid size-full place-items-center text-white/40"><Video className="size-8" aria-label="No demonstration available" /></div>}
   </div>;
 }
 

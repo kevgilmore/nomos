@@ -26,3 +26,21 @@ works on edge-to-edge devices. The app generator uses the same export.
 `NomosShell` owns evenly distributed mobile navigation for up to five items,
 scrollable navigation beyond that, and bottom content clearance including the
 home-indicator inset. Keep these defaults in the platform rather than app CSS.
+
+## Todoist worker failure reporting
+
+The listener captures the worker's final answer separately from tool output and
+requires both a passing result and screenshot attachment before moving to review.
+Failed attempts retain redacted diagnostic tails under `.nomos/task-*-attempt-*.log`.
+Todoist receives a short model-written cause/next-step summary, with bounded
+length, timeout and plain-language fallback when the summariser is unavailable.
+Usage-limit failures retain In progress and pause for one hour before retrying;
+they do not burn through repository repair attempts. Restart preserves the lease
+and fix-comment history. Existing Failed tasks require Ready to request a retry.
+
+`nomos deploy` snapshots tickets labelled Deploy in the Nomos Todoist project
+before building. It adds a brief production success comment or an LLM-written
+failure explanation to those tickets when the command finishes. Labels and
+completion state are unchanged. Failures may represent a partial deployment.
+Missing Todoist credentials skip reporting; notification errors are reported in
+the terminal separately from the deployment outcome.
