@@ -5,6 +5,8 @@ import { execFileSync } from "node:child_process";
 import { readdir, readFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import net from "node:net";
+import { homedir } from "node:os";
+import { randomBytes } from "node:crypto";
 import { deploymentReporter, deploymentMessage } from "./deploy-report.mjs";
 import path from "node:path";
 import process from "node:process";
@@ -64,7 +66,7 @@ function printHelp() {
   console.log("Starts Home, ID, Base, and every runnable app under apps/.");
   console.log("Home runs on 3000, ID on 3001, Base on 3002, and products from 3003.");
   console.log("Deploy builds every production app, validates static navigation, then deploys Hosting and Functions.");
-  console.log("Pass -d <app> after dev to expose that local app through its configured ngrok domain.");
+  console.log("Pass -d <app> after dev to expose any local app through ngrok.");
   console.log("create-app scaffolds a complete authenticated product app, Hosting target, and custom domain mapping.");
 }
 
@@ -86,26 +88,20 @@ function parseDevArgs(args) {
       if (!ngrokApp) throw new Error("Dev option --domain requires an app name, for example: nomos dev --domain fitness");
       continue;
     }
-    throw new Error(`Unknown deploy option: ${argument}`);
+    throw new Error(`Unknown dev option: ${argument}`);
   }
   return ngrokApp;
 }
 
-async function loadNgrokApp(appName) {
+async function loadNgrokConfig() {
   let config;
   try {
     config = JSON.parse(await readFile(ngrokConfigPath, "utf8"));
   } catch (error) {
+    if (error?.code === "ENOENT") return {};
     throw new Error(`Could not read ngrok configuration (${error instanceof Error ? error.message : error})`);
   }
-  const app = config?.[appName];
-  if (!app || !Number.isInteger(app.port) || typeof app.domain !== "string") {
-    const available = Object.keys(config ?? {}).join(", ") || "none";
-    throw new Error(`No ngrok configuration exists for '${appName}'. Configured apps: ${available}`);
-  }
-  const domain = app.domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  if (!domain || domain.includes("/")) throw new Error(`Invalid ngrok domain for '${appName}'`);
-  return { ...app, domain };
+  return config ?? {};
 }
 
 async function waitForPort(port, timeoutMs = 30000) {
@@ -117,45 +113,39 @@ async function waitForPort(port, timeoutMs = 30000) {
   throw new Error(`Local app did not start listening on port ${port}`);
 }
 
-async function startNgrokTunnel(appName) {
-  const app = await loadNgrokApp(appName);
-  const appDirectoryCandidates = [
-    path.join(appsRoot, appName),
-    path.join(repoRoot, "platform", appName),
-  ];
-  const appDirectory = appDirectoryCandidates.find((candidate) => existsSync(path.join(candidate, "package.json")));
-  if (!appDirectory) throw new Error(`The '${appName}' ngrok target is configured but has no local app directory`);
+async function startNgrokTunnel(appName, serverRows) {
+  const normalizedName = appName.toLowerCase().replace(/^@nomos\//, "");
+  const target = serverRows.find(({ app }) => {
+    const packageName = app.name.toLowerCase().replace(/^@nomos\//, "");
+    return packageName === normalizedName || path.basename(app.directory).toLowerCase() === normalizedName;
+  });
+  if (!target) {
+    const available = serverRows.map(({ app }) => app.name.replace(/^@nomos\//, "")).join(", ");
+    throw new Error(`No runnable app found for '${appName}'. Available apps: ${available}`);
+  }
 
-  const ngrokCommand = process.platform === "win32" ? "ngrok.exe" : "ngrok";
+  const config = await loadNgrokConfig();
+  const configured = config[normalizedName] ?? Object.values(config).find((entry) => typeof entry?.domain === "string");
+  let domain = null;
+  if (configured) {
+    if (typeof configured.domain !== "string") throw new Error(`Invalid ngrok domain for '${appName}'`);
+    domain = configured.domain.replace(/^https?:\/\//, "").replace(/\/$/, "");
+    if (!domain || domain.includes("/")) throw new Error(`Invalid ngrok domain for '${appName}'`);
+  }
+
+  const userNgrok = path.join(homedir(), ".local", "bin", "ngrok");
+  const ngrokCommand = process.env.NGROK_BIN
+    ?? (existsSync(userNgrok) ? userNgrok : process.platform === "win32" ? "ngrok.exe" : "ngrok");
   try { execFileSync(ngrokCommand, ["version"], { stdio: "ignore" }); } catch { throw new Error("ngrok CLI is not installed or is not on PATH"); }
 
-  let localApp = null;
-  if (!(await portIsBusy(app.port))) {
-    const nextBinary = path.join(appDirectory, "node_modules", ".bin", "next");
-    if (!existsSync(nextBinary)) throw new Error(`Cannot start ${appName}: Next.js is not installed. Run pnpm install first.`);
-    console.log(`Starting ${appName} locally on port ${app.port} for ngrok…`);
-    localApp = spawn(nextBinary, ["dev", "--hostname", hostname, "--port", String(app.port)], {
-      cwd: appDirectory,
-      env: {
-        ...process.env,
-        NEXT_PUBLIC_NOMOS_ENV: "development",
-        NOMOS_ROOT: repoRoot,
-        NOMOS_APP_PORT: String(app.port),
-        NEXT_PUBLIC_NOMOS_DEV_PUBLIC_URL: `https://${app.domain}`,
-      },
-      stdio: "inherit",
-      detached: true,
-    });
-    localApp.once("error", (error) => console.error(`Could not start ${appName}: ${error.message}`));
-    try {
-      await waitForPort(app.port);
-    } catch (error) {
-      if (!localApp.killed) stopGroup(localApp.pid);
-      throw error;
-    }
-  }
-  console.log(`Exposing ${appName} at https://${app.domain} (reserved domain ${app.domainId ?? "configured"})`);
-  const tunnel = spawn(ngrokCommand, ["http", String(app.port), "--url", `https://${app.domain}`, "--log", "stdout"], {
+  await waitForPort(target.port);
+  console.log(domain
+    ? `Exposing ${normalizedName} at https://${domain} (reserved domain ${configured.domainId ?? "configured"})`
+    : `Exposing ${normalizedName} through ngrok; the public URL will appear below.`);
+  const ngrokArgs = ["http", String(target.port)];
+  if (domain) ngrokArgs.push("--url", `https://${domain}`);
+  ngrokArgs.push("--log", "stdout");
+  const tunnel = spawn(ngrokCommand, ngrokArgs, {
     cwd: repoRoot,
     env: process.env,
     stdio: "inherit",
@@ -165,14 +155,12 @@ async function startNgrokTunnel(appName) {
     let settled = false;
     const stop = () => {
       if (!tunnel.killed) tunnel.kill("SIGTERM");
-      if (localApp && !localApp.killed) stopGroup(localApp.pid);
     };
     const finish = (error) => {
       if (settled) return;
       settled = true;
       process.removeListener("SIGINT", stop);
       process.removeListener("SIGTERM", stop);
-      if (localApp && !localApp.killed) stopGroup(localApp.pid);
       if (error) reject(error); else resolve();
     };
     tunnel.once("error", (error) => finish(new Error(`Could not start ngrok: ${error.message}`)));
@@ -387,6 +375,26 @@ const serverRows = apps.map((app, index) => {
   return { app, label, port, status: "starting", url: `http://localhost:${port}` };
 });
 
+const exposedSlug = ngrokApp?.toLowerCase().replace(/^@nomos\//, "") ?? null;
+const ngrokConfig = ngrokApp ? await loadNgrokConfig() : {};
+const exposedEntry = exposedSlug ? ngrokConfig[exposedSlug] ?? Object.values(ngrokConfig).find((entry) => typeof entry?.domain === "string") : null;
+const exposedDomain = typeof exposedEntry?.domain === "string"
+  ? exposedEntry.domain.replace(/^https?:\/\//, "").replace(/\/$/, "")
+  : null;
+const exposedUrl = exposedDomain ? `https://${exposedDomain}` : null;
+if (ngrokApp && !exposedUrl) {
+  console.error(`A configured reserved domain is required for authenticated ngrok previews. Add '${exposedSlug}' to platform/infra/ngrok.json.`);
+  process.exit(1);
+}
+const previewEnv = exposedSlug && exposedUrl ? {
+  NEXT_PUBLIC_NOMOS_ENV: "development",
+  [`NEXT_PUBLIC_NOMOS_${exposedSlug.toUpperCase()}_URL`]: exposedUrl,
+  NEXT_PUBLIC_NOMOS_DEV_PUBLIC_URL: exposedUrl,
+  NEXT_PUBLIC_NOMOS_PREVIEW_ORIGIN: exposedUrl,
+  NEXT_PUBLIC_NOMOS_ID_URL: "https://id.nomos.codes",
+  NOMOS_PREVIEW_SESSION_SECRET: randomBytes(32).toString("base64url"),
+} : {};
+
 const occupied = (await Promise.all(serverRows.map(async (row) => ({ row, busy: await portIsBusy(row.port) })))).filter((entry) => entry.busy);
 if (occupied.length > 0) {
   console.error("Nomos cannot start because these ports are already in use:");
@@ -414,10 +422,12 @@ renderRows();
 
 for (const row of serverRows) {
   const { app, port } = row;
+  const slug = app.name.replace(/^@nomos\//, "");
+  const appEnv = slug === exposedSlug ? previewEnv : { NEXT_PUBLIC_NOMOS_ENV: "development" };
   const nextBinary = path.join(app.directory, "node_modules", ".bin", "next");
   const child = spawn(nextBinary, ["dev", "--hostname", hostname, "--port", String(port)], {
     cwd: app.directory,
-    env: { ...process.env, NOMOS_ROOT: repoRoot, NOMOS_APP_PORT: String(port) },
+    env: { ...process.env, ...appEnv, NOMOS_ROOT: repoRoot, NOMOS_APP_PORT: String(port) },
     stdio: ["ignore", "pipe", "pipe"],
     detached: true
   });
@@ -458,7 +468,7 @@ process.once("SIGINT", () => shutdown("SIGTERM"));
 process.once("SIGTERM", () => shutdown("SIGTERM"));
 if (ngrokApp) {
   try {
-    await startNgrokTunnel(ngrokApp);
+    await startNgrokTunnel(ngrokApp, serverRows);
   } catch (error) {
     shutdown("SIGTERM");
     console.error(error instanceof Error ? error.message : error);

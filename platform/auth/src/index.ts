@@ -42,6 +42,47 @@ export function getLocalSessionCookie(slug: string) {
   return LOCAL_SESSION_COOKIES[slug as keyof typeof LOCAL_SESSION_COOKIES] ?? `nomos_${slug}_session`;
 }
 
+function base64UrlEncode(value: string) {
+  const bytes = new TextEncoder().encode(value);
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function base64UrlDecode(value: string) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+  const binary = atob(base64);
+  return new TextDecoder().decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+}
+
+async function previewSignature(payload: string, secret: string) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = new Uint8Array(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)));
+  let binary = "";
+  for (const byte of signature) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+export async function createPreviewSession(user: SessionUser, secret: string) {
+  const payload = base64UrlEncode(JSON.stringify({ user, expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000 }));
+  return `${payload}.${await previewSignature(payload, secret)}`;
+}
+
+export async function verifyPreviewSession(value: string | undefined, secret: string): Promise<SessionUser | null> {
+  if (!value || !secret) return null;
+  const [payload, signature, extra] = value.split(".");
+  if (!payload || !signature || extra) return null;
+  const expected = await previewSignature(payload, secret);
+  if (expected.length !== signature.length) return null;
+  let difference = 0;
+  for (let index = 0; index < expected.length; index += 1) difference |= expected.charCodeAt(index) ^ signature.charCodeAt(index);
+  if (difference !== 0) return null;
+  try {
+    const decoded = JSON.parse(base64UrlDecode(payload)) as { user?: SessionUser; expiresAt?: number };
+    return decoded.user && typeof decoded.expiresAt === "number" && decoded.expiresAt > Date.now() ? decoded.user : null;
+  } catch { return null; }
+}
+
 // NODE_ENV is not a deployment selector: local `next start` and some wrappers
 // can set it to production. Only an explicit public deployment flag switches
 // links away from the local ports.
@@ -95,16 +136,33 @@ export function validateProductionReturnTo(value: string | null | undefined): st
     const url = new URL(value);
     const nomosDomain = url.protocol === "https:" && (url.hostname === "nomos.codes" || url.hostname.endsWith(".nomos.codes"));
     const knownOrigin = PRODUCTION_RETURN_ORIGINS.includes(url.origin as typeof PRODUCTION_RETURN_ORIGINS[number]);
-    if ((!knownOrigin && !nomosDomain) || url.username || url.password) return null;
+    let previewOrigin = "";
+    try { previewOrigin = process.env.NEXT_PUBLIC_NOMOS_PREVIEW_ORIGIN ? new URL(process.env.NEXT_PUBLIC_NOMOS_PREVIEW_ORIGIN).origin : ""; } catch {}
+    const configuredPreview = !!previewOrigin && url.origin === previewOrigin;
+    if ((!knownOrigin && !nomosDomain && !configuredPreview) || url.username || url.password) return null;
     return url.toString();
+  } catch { return null; }
+}
+
+// The identity UI may display a sign-in action for an ngrok URL, but the
+// server remains the security boundary and accepts only NOMOS_PREVIEW_ORIGIN.
+export function validateIdentityReturnTo(value: string | null | undefined): string | null {
+  const production = validateProductionReturnTo(value);
+  if (production) return production;
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    const ngrok = url.protocol === "https:" && ngrokDevelopmentSuffixes.some((suffix) => url.hostname.endsWith(suffix));
+    return ngrok && !url.username && !url.password ? url.toString() : null;
   } catch { return null; }
 }
 
 export function buildLocalSignInUrl(returnTo: string): string {
   const safeReturnTo = validateLocalReturnTo(returnTo) ?? LOCAL_RETURN_ORIGINS[0];
-  return `${LOCAL_IDENTITY_ORIGIN}/sign-in?returnTo=${encodeURIComponent(safeReturnTo)}`;
+  return `${NOMOS_URLS.id}/sign-in?returnTo=${encodeURIComponent(safeReturnTo)}`;
 }
 
 export function buildLocalSignInUrlForRequest(pathname: string, search: string, localPort: number): string {
-  return buildLocalSignInUrl(`http://localhost:${localPort}${pathname}${search}`);
+  const origin = process.env.NEXT_PUBLIC_NOMOS_DEV_PUBLIC_URL ?? `http://localhost:${localPort}`;
+  return buildLocalSignInUrl(`${origin}${pathname}${search}`);
 }

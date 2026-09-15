@@ -126,7 +126,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
         return response;
       } catch (error) {
         if (isApiRequest) showNomosToast({ tone: "error", message: `${isHevyRequest ? "Hevy request failed" : "Request failed"}: ${error instanceof Error ? error.message : "Network error"}` });
-        if (isNavigationRequest || isAuthRequest) console.error("[Nomos diagnostics] fetch error", { clickId: lastInternalClick?.id ?? null, url: request.url, error });
+        if (isNavigationRequest || isAuthRequest) console.error("[Nomos diagnostics] fetch error", { clickId: lastInternalClick?.id ?? null, url: request.url, error: error instanceof Error ? { name: error.name, message: error.message, stack: error.stack } : error });
         throw error;
       }
     };
@@ -242,7 +242,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
       return;
     }
 
-    if (local && (localCookie || !["localhost", "127.0.0.1"].includes(window.location.hostname))) {
+    if (local && localCookie) {
       if (!localCookie) document.cookie = `${localCookieName}=local-development; Path=/; Max-Age=604800; SameSite=Lax`;
       console.info("[Nomos diagnostics] auth check local session accepted", { localCookieName });
       clientSessionUser = LOCAL_DEV_USER;
@@ -256,16 +256,16 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
       clientSessionPromise = (async () => {
         const handoffCode = new URLSearchParams(window.location.search).get("nomosAuthHandoff");
         if (handoffCode) {
+          const handoffReturnTo = new URL(window.location.href);
+          handoffReturnTo.searchParams.delete("nomosAuthHandoff");
           const response = await fetch("/api/auth/session", {
             method: "POST",
             headers: { "content-type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ handoffCode, returnTo: window.location.href.split("?")[0] }),
+            body: JSON.stringify({ handoffCode, returnTo: handoffReturnTo.toString() }),
           });
           if (!response.ok) throw new Error("Sign-in handoff was not accepted");
-          const cleanUrl = new URL(window.location.href);
-          cleanUrl.searchParams.delete("nomosAuthHandoff");
-          window.history.replaceState({}, "", cleanUrl.toString());
+          window.history.replaceState({}, "", handoffReturnTo.toString());
         }
         return fetch("/api/auth/session", { credentials: "include", cache: "no-store" }).then(async (response) => {
         console.info("[Nomos diagnostics] auth check response", { status: response.status, ok: response.ok, url: response.url, contentType: response.headers.get("content-type") });

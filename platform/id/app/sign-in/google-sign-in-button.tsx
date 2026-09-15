@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { completeGoogleRedirect, signInWithGoogleRedirect } from "@nomos/auth/client";
+import { completeGoogleRedirect, signInWithGoogleRedirect, signOutFirebaseUser } from "@nomos/auth/client";
 import { isLocalDevelopmentHost } from "@nomos/auth";
 
 export function GoogleSignInButton({ returnTo }: { returnTo: string }) {
@@ -13,10 +13,14 @@ export function GoogleSignInButton({ returnTo }: { returnTo: string }) {
     if (!response.ok) {
       throw new Error(responseBody?.error ?? `Sign-in was not accepted (${response.status})`);
     }
-    const session = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
-    if (!session.ok) throw new Error("Sign-in succeeded, but the session cookie was not stored. Please retry from id.nomos.codes.");
     const result = await response.json() as { redirectTo?: string };
-    window.location.assign(result.redirectTo ?? returnTo);
+    const redirectTo = result.redirectTo ?? returnTo;
+    const handoff = new URL(redirectTo).searchParams.has("nomosAuthHandoff");
+    if (!handoff) {
+      const session = await fetch("/api/auth/session", { credentials: "include", cache: "no-store" });
+      if (!session.ok) throw new Error("Sign-in succeeded, but the session cookie was not stored. Please retry from id.nomos.codes.");
+    }
+    window.location.assign(redirectTo);
   }
 
   useEffect(() => {
@@ -47,5 +51,16 @@ export function GoogleSignInButton({ returnTo }: { returnTo: string }) {
       setWorking(false);
     }
   }
-  return <div className="space-y-3"><button type="button" onClick={signIn} disabled={working} className="h-11 w-full cursor-pointer rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] disabled:cursor-wait disabled:opacity-60">{working ? "Signing in…" : "Continue with Google"}</button>{error && <p role="alert" className="text-sm text-red-200">{error}</p>}</div>;
+  async function useAnotherAccount() {
+    setWorking(true);
+    try {
+      await signOutFirebaseUser();
+      setError(null);
+      await signInWithGoogleRedirect(true);
+    } finally {
+      setWorking(false);
+    }
+  }
+  const accountNotApproved = error === "Account is not approved";
+  return <div className="space-y-3"><button type="button" onClick={signIn} disabled={working} className="h-11 w-full cursor-pointer rounded-full bg-[var(--primary)] px-5 text-sm font-semibold text-[var(--primary-foreground)] disabled:cursor-wait disabled:opacity-60">{working ? "Signing in…" : "Continue with Google"}</button>{error && <div role="alert" className="space-y-2 text-sm text-red-200"><p>{error}</p>{accountNotApproved && <button type="button" onClick={() => void useAnotherAccount()} disabled={working} className="cursor-pointer text-white/70 underline underline-offset-4 hover:text-white disabled:cursor-wait disabled:opacity-60">Log out and use another account</button>}</div>}</div>;
 }

@@ -67,8 +67,12 @@ custom-domain mapping, creates the Cloudflare CNAME/TXT records, and verifies
 CLI login and `CLOUDFLARE_API_TOKEN` (with DNS edit access for `nomos.codes`).
 
 `nomos dev -d <app>` starts the development servers and exposes the selected
-local app through its reserved ngrok domain. App/domain mappings live in
-`platform/infra/ngrok.json`.
+app through the reserved domain in `platform/infra/ngrok.json`. A single free
+ngrok domain is reused for whichever app is selected. Public previews sign in
+through `id.nomos.codes`; configure the Functions parameter
+`NOMOS_PREVIEW_ORIGIN` to that exact `https://...ngrok-free.dev` origin and
+deploy the shared auth function after changing the domain. Other app links stay
+on localhost in development, while production continues to use `*.nomos.codes`.
 
 Read [docs/architecture](docs/architecture/README.md), [docs/platform](docs/platform/README.md), and [docs/apps](docs/apps/README.md) for the working conventions.
 

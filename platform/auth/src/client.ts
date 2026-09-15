@@ -45,11 +45,13 @@ export async function signInWithGooglePopup() {
   return result.user.getIdToken();
 }
 
-export async function signInWithGoogleRedirect() {
+export async function signInWithGoogleRedirect(selectAccount = false) {
   const config = firebaseConfig();
   if (!config) throw new Error("Firebase client configuration is missing");
   const app = getApps().length ? getApp() : initializeApp(config);
-  await signInWithRedirect(getAuth(app), new GoogleAuthProvider());
+  const provider = new GoogleAuthProvider();
+  if (selectAccount) provider.setCustomParameters({ prompt: "select_account" });
+  await signInWithRedirect(getAuth(app), provider);
 }
 
 export async function completeGoogleRedirect() {

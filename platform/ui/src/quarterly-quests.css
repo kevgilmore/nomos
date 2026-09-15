@@ -28,8 +28,16 @@
 @media(prefers-reduced-motion:reduce) { .quests-page * { transition:none!important; } }
 
 .quest-draft-label { color:var(--quest-maintenance); font-size:11px; font-weight:600; }
-.review-navigation { display:flex; flex-wrap:wrap; align-items:center; gap:8px; border-block:1px solid var(--border); padding:10px 0; }
-.review-navigation select { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:10px; font-size:14px; }
+.review-navigation { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:12px; margin-bottom:24px; border-block:1px solid var(--border); padding:10px 0; }
+.review-navigation-summary,.review-navigation-controls { display:flex; align-items:center; min-width:0; }
+.review-navigation-summary { gap:10px; }
+.review-navigation-summary strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
+.review-navigation-summary span { flex-shrink:0; color:var(--muted-foreground); font-size:12px; white-space:nowrap; }
+.review-navigation-controls { gap:6px; }
+.review-navigation select { min-width:0; background:var(--card); border:1px solid var(--border); border-radius:8px; padding:9px 8px; font-size:13px; }
+.review-navigation #review-year { width:76px; }
+.review-navigation #review-week { width:100px; }
+.review-this-week-short { display:none; }
 .review-quest-panel { margin-bottom:28px; }
 .review-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 .review-metric { display:flex; flex-direction:column; padding:18px; border:1px solid var(--border); border-top:2px solid var(--quest-color); border-radius:12px; background:var(--card); }
@@ -42,7 +50,20 @@
 .review-written-line { min-height:40px; padding:6px 0 12px; border-bottom:1px solid var(--border); font-size:14px; line-height:24px; white-space:pre-wrap; }
 .review-upload { padding:24px; border:1px dashed var(--ring); border-radius:14px; background:color-mix(in srgb,var(--ring) 5%,var(--card)); }
 @media(max-width:1000px) { .review-notes-layout { grid-template-columns:1fr; } }
-@media(max-width:640px) { .review-metrics { grid-template-columns:1fr; } .review-note { padding:18px; } }
+@media(max-width:640px) {
+ .review-navigation { grid-template-columns:1fr; gap:8px; }
+ .review-navigation-summary { justify-content:center; }
+ .review-navigation-controls { width:100%; gap:4px; }
+ .review-navigation-controls button { min-width:36px; height:36px; padding-inline:7px; }
+ .review-navigation #review-year { width:auto; flex:0 1 66px; }
+ .review-navigation #review-week { width:auto; flex:1 1 80px; }
+ .review-navigation select { padding:8px 5px; font-size:12px; }
+ .review-this-week-full,.review-edit-label { display:none; }
+ .review-this-week-short { display:inline; font-size:11px; }
+ .review-this-week:disabled { display:none; }
+ .review-metrics { grid-template-columns:1fr; }
+ .review-note { padding:18px; }
+}
 .manifesto-toolbar { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; border-bottom:1px solid var(--border); padding-bottom:18px; }
 .manifesto-date { min-width:0; max-width:150px; background:transparent; padding:8px; font-size:12px; border-radius:6px; }
 .manifesto-opening { display:grid; grid-template-columns:1fr 1.4fr; align-items:center; gap:44px; padding:40px 0; }
@@ -79,7 +100,6 @@
 .reviews-page { display:flex; flex-direction:column; }
 .reviews-page > header { order:0; }
 .reviews-page > nav { order:1; }
-.reviews-page > div.my-6 { order:2; }
 .reviews-page > p { order:3; }
 .reviews-page > .review-notes-layout { order:4; }
 .reviews-page > .review-quest-panel { order:5; margin-top:24px; }
@@ -95,7 +115,17 @@
 .report-section-title { margin-bottom:20px; font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted-foreground); }
 .report-reflection { padding:24px; border:1px solid var(--border); border-radius:12px; background:var(--card); }
 @media(max-width:700px) { .report-columns { grid-template-columns:1fr; gap:24px; } .report-cover { padding:24px; } .report-stats>div { padding:16px; } }
-.manifesto-writing { min-height:34px; resize:none; font-size:15px; line-height:24px; }
+.manifesto-writing {
+ min-height:34px;
+ resize:none;
+ border:0;
+ outline:none;
+ box-shadow:none;
+ font-size:16px;
+ line-height:32px;
+ background:repeating-linear-gradient(to bottom,transparent 0,transparent 31px,var(--border) 31px,var(--border) 32px);
+}
+.manifesto-writing:focus,.manifesto-writing:focus-visible { border:0; outline:none; box-shadow:none; }
 .manifesto-section { padding:16px 20px; }
 .manifesto-progress-strip { margin-bottom:24px; }
 .manifesto-progress-strip .quest-progress-panel { padding:16px 20px; }
