@@ -30,12 +30,15 @@ export async function isApprovedRequest(req: { headers: { cookie?: string } }) {
   try { return allowedUser(await adminAuth().verifySessionCookie(session, true)); } catch { return false; }
 }
 
-export async function approvedSessionUser(req: { headers: { cookie?: string } }) {
+export async function approvedSessionUser(req: { headers: { cookie?: string } }, checkRevoked = true) {
   const cookieHeader = req.headers.cookie ?? "";
   const session = cookieHeader.split(";").map((part) => part.trim()).find((part) => part.startsWith(`${SESSION_COOKIE}=`))?.slice(SESSION_COOKIE.length + 1);
   if (!session) return null;
   try {
-    const decoded = await adminAuth().verifySessionCookie(session, true);
+    // The shell only needs to establish the already-issued identity. Keep the
+    // initial page load fast; protected mutations continue to use revocation
+    // checks through the default path.
+    const decoded = await adminAuth().verifySessionCookie(session, checkRevoked);
     if (!allowedUser(decoded)) return null;
     return { id: decoded.uid, name: decoded.name ?? "Nomos user", email: decoded.email ?? "", avatarUrl: decoded.picture };
   } catch { return null; }
@@ -134,8 +137,8 @@ export const authApi = onRequest({ region: "europe-west2", secrets: ["NOMOS_APPR
     return;
   }
   if (req.method === "GET" && path === "/session") {
-    const user = await approvedSessionUser(req);
-    res.set("Cache-Control", "no-store");
+    const user = await approvedSessionUser(req, false);
+    res.set("Cache-Control", "private, max-age=30, stale-while-revalidate=120");
     if (!user) { res.status(401).json({ error: "Authentication required" }); return; }
     res.json({ user });
     return;

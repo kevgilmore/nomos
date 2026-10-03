@@ -2,3 +2,4 @@ export const platformConfig = { name: "Nomos", supportEmail: "support@example.co
 export { platformApps, type PlatformApp } from "./apps.generated";
 export { getFirebaseApp } from "./firebase";
 export { getFirestoreDb, getFirestoreDocument, listFirestoreDocuments, setFirestoreDocument } from "@nomos/db";
+export { enqueueOfflineMutation, flushOfflineMutations, registerOfflineMutationHandler, subscribeOfflineSync, type OfflineSyncState } from "./offline";

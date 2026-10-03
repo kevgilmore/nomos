@@ -18,7 +18,7 @@ export function HomePage() {
     window.location.assign(app.href);
   }
 
-  return <section className="mx-auto flex min-h-[calc(100dvh-9rem)] w-full max-w-4xl flex-col items-center justify-center px-2 pb-8 text-center">
+  return <section className="mx-auto flex min-h-screen w-full max-w-4xl flex-col items-center justify-center px-2 pb-8 text-center">
     <div className="mb-8"><NomosLogo compact /></div>
     <h2 className="text-4xl font-semibold tracking-[-.05em] md:text-6xl">Welcome to Nomos</h2>
     <label htmlFor="nomos-home-search" className="sr-only">Search Nomos apps</label>

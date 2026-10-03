@@ -10,6 +10,10 @@ metadata:
 
 # UI Styling Skill
 
+## Nomos policy
+
+In Nomos, this skill is subordinate to the repository platform rules. Never create bespoke app-level controls, shells, theme tokens, raw colors, arbitrary Tailwind values, or page layout primitives. Use `@nomos/ui` and its page patterns first; when a needed pattern does not exist, implement it in `platform/ui` and export it. Always run `pnpm lint:ui-policy` after UI work.
+
 Comprehensive skill for creating beautiful, accessible user interfaces combining shadcn/ui components, Tailwind CSS utility styling, and canvas-based visual design systems.
 
 ## Reference

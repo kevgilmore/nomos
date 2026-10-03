@@ -17,6 +17,17 @@ export type ShellUser = { name: string; email: string; avatarUrl?: string };
 let clientSessionUser: ShellUser | null = null;
 let clientSessionPromise: Promise<ShellUser | null> | null = null;
 const SESSION_STORAGE_KEY = "nomos.session.user";
+const AUTH_CHECK_TIMEOUT_MS = 8_000;
+
+async function fetchAuthSession(input: RequestInfo | URL = "/api/auth/session", init?: RequestInit) {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), AUTH_CHECK_TIMEOUT_MS);
+  try {
+    return await fetch(input, { ...init, credentials: "include", signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
 
 function readStoredSessionUser(): ShellUser | null {
   if (typeof window === "undefined") return null;
@@ -242,8 +253,8 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
       return;
     }
 
-    if (local && localCookie) {
-      if (!localCookie) document.cookie = `${localCookieName}=local-development; Path=/; Max-Age=604800; SameSite=Lax`;
+    const localDevelopment = local && process.env.NEXT_PUBLIC_NOMOS_ENV !== "production";
+    if (localDevelopment) {
       console.info("[Nomos diagnostics] auth check local session accepted", { localCookieName });
       clientSessionUser = LOCAL_DEV_USER;
       storeSessionUser(LOCAL_DEV_USER);
@@ -258,7 +269,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
         if (handoffCode) {
           const handoffReturnTo = new URL(window.location.href);
           handoffReturnTo.searchParams.delete("nomosAuthHandoff");
-          const response = await fetch("/api/auth/session", {
+          const response = await fetchAuthSession("/api/auth/session", {
             method: "POST",
             headers: { "content-type": "application/json" },
             credentials: "include",
@@ -267,7 +278,7 @@ export function NomosShell({ children, title, homeUrl, logo, navigation = [], ap
           if (!response.ok) throw new Error("Sign-in handoff was not accepted");
           window.history.replaceState({}, "", handoffReturnTo.toString());
         }
-        return fetch("/api/auth/session", { credentials: "include", cache: "no-store" }).then(async (response) => {
+        return fetchAuthSession("/api/auth/session", { cache: "no-store" }).then(async (response) => {
         console.info("[Nomos diagnostics] auth check response", { status: response.status, ok: response.ok, url: response.url, contentType: response.headers.get("content-type") });
         if (response.ok) {
           const data = await response.json();

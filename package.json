@@ -17,10 +17,15 @@
     "build:all": "pnpm --recursive --if-present build",
     "build:hosting": "node scripts/build-hosting.mjs",
     "classify:pan-p-gym": "node scripts/classify-pan-p-gym.mjs",
-    "lint": "pnpm --recursive --if-present lint",
+    "lint:ui-policy": "node scripts/check-ui-policy.mjs",
+    "test:e2e": "playwright test",
+    "lint": "pnpm lint:ui-policy && pnpm --recursive --if-present lint",
     "typecheck": "pnpm --recursive --if-present typecheck"
   },
   "dependencies": {
     "firebase": "^12.18.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.1"
   }
 }

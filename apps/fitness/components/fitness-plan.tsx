@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Activity, CalendarDays, ChevronDown, Dumbbell, RefreshCw, TimerReset, Video } from "lucide-react";
-import { VideoPreview, Button, Card, CardContent } from "@nomos/ui";
+import { VideoPreview, Button, Checkbox, Card, CardContent } from "@nomos/ui";
+import { enqueueOfflineMutation, registerOfflineMutationHandler } from "@nomos/data/offline";
 import type { HevyExercise, HevyRoutine, HevySet, HevyWorkout } from "@/lib/hevy-types";
 import { EXERCISE_DATASET, isFitnessExercise, type FitnessExercise } from "@/lib/exercises";
 import { exerciseVideoUrl } from "@/lib/media";
@@ -12,13 +13,11 @@ import { applyRoutineChanges, proposalToRoutineChanges, type FitnessPlanProposal
 
 type Props = { initialRoutines: HevyRoutine[]; initialError: string | null };
 const order = ["Upper", "Lower", "Push", "Pull", "Legs"];
-const tone: Record<string, string> = { Upper: "#a78bfa", Lower: "#5eead4", Push: "#fb7185", Pull: "#60a5fa", Legs: "#fbbf24" };
+const tone: Record<string, string> = { Upper: "var(--ring)", Lower: "var(--ring)", Push: "var(--destructive)", Pull: "var(--ring)", Legs: "var(--ring)" };
 const DATA_CACHE_KEY = "nomos_fitness_data_my_routines";
-const DATA_CACHE_TTL_MS = 5 * 60 * 1000;
 const EXERCISE_CACHE_KEY = "nomos_fitness_exercise_library";
 const EXERCISE_CACHE_TTL_MS = 60 * 60 * 1000;
 const WORKOUT_CACHE_KEY = "nomos_fitness_workouts";
-const WORKOUT_CACHE_TTL_MS = 5 * 60 * 1000;
 
 type FitnessData = { routines: HevyRoutine[]; cachedAt: number };
 type WorkoutData = { workouts: HevyWorkout[]; cachedAt: number };
@@ -89,17 +88,22 @@ export function FitnessPlan({ initialRoutines, initialError }: Props) {
   const [loading, setLoading] = useState(initialRoutines.length === 0 && !initialError);
 
   async function loadData() {
-    setLoading(true);
+    if (!routines.length) setLoading(true);
+    let hasCachedData = false;
     try {
       const cached = localStorage.getItem(DATA_CACHE_KEY) || sessionStorage.getItem(DATA_CACHE_KEY);
       if (cached) {
         try {
           const data = JSON.parse(cached) as FitnessData;
-          if (Array.isArray(data.routines) && Date.now() - data.cachedAt < DATA_CACHE_TTL_MS) { setRoutines(data.routines); cacheFitnessAgentContext(data.routines); setError(null); return; }
+          if (Array.isArray(data.routines)) {
+            setRoutines(data.routines);
+            cacheFitnessAgentContext(data.routines);
+            setError(null);
+            hasCachedData = true;
+          }
         } catch {
           // Ignore malformed cache data and replace it with a fresh API response.
         }
-        sessionStorage.removeItem(DATA_CACHE_KEY);
       }
       const nextRoutines = await fetchHevyRoutines();
       setRoutines(nextRoutines);
@@ -108,7 +112,9 @@ export function FitnessPlan({ initialRoutines, initialError }: Props) {
       localStorage.setItem(DATA_CACHE_KEY, cachedData);
       sessionStorage.setItem(DATA_CACHE_KEY, cachedData);
       cacheFitnessAgentContext(nextRoutines);
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Unable to connect"); }
+    } catch (cause) {
+      if (!hasCachedData) setError(cause instanceof Error ? cause.message : "Unable to connect");
+    }
     finally { setLoading(false); }
   }
 
@@ -120,7 +126,7 @@ export function FitnessPlan({ initialRoutines, initialError }: Props) {
 }
 
 function PlanView({ routines }: { routines: HevyRoutine[] }) {
-  const [baseRoutines] = useState(routines);
+  const [baseRoutines, setBaseRoutines] = useState(routines);
   const [library, setLibrary] = useState<FitnessExercise[]>([]);
   const [libraryLoading, setLibraryLoading] = useState(true);
   const [libraryError, setLibraryError] = useState<string | null>(null);
@@ -131,6 +137,15 @@ function PlanView({ routines }: { routines: HevyRoutine[] }) {
   const [workouts, setWorkouts] = useState<HevyWorkout[]>([]);
   const [workoutsLoading, setWorkoutsLoading] = useState(true);
   const [workoutsError, setWorkoutsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unregister = registerOfflineMutationHandler("fitness.my-routines", async (payload) => {
+      const response = await fetch("/api/hevy/suggested", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+      const data = await readApiResponse<{ error?: string }>(response);
+      if (!response.ok) throw new Error(data.error || "Unable to sync My Routines changes");
+    });
+    return () => { unregister(); };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -186,19 +201,19 @@ function PlanView({ routines }: { routines: HevyRoutine[] }) {
   useEffect(() => {
     let active = true;
     async function loadWorkouts() {
+      let hasCachedData = false;
       try {
         const cached = sessionStorage.getItem(WORKOUT_CACHE_KEY);
         if (cached) {
           try {
             const data = JSON.parse(cached) as WorkoutData;
-            if (Array.isArray(data.workouts) && Date.now() - data.cachedAt < WORKOUT_CACHE_TTL_MS) {
+            if (Array.isArray(data.workouts)) {
+              hasCachedData = true;
               if (active) { setWorkouts(data.workouts); setWorkoutsError(null); setWorkoutsLoading(false); }
-              return;
             }
           } catch {
             // Ignore malformed cache data and replace it with a fresh response.
           }
-          sessionStorage.removeItem(WORKOUT_CACHE_KEY);
         }
         const response = await fetch("/api/hevy/workouts", { cache: "no-store" });
         const data = await readApiResponse<{ workouts?: HevyWorkout[] }>(response);
@@ -207,7 +222,7 @@ function PlanView({ routines }: { routines: HevyRoutine[] }) {
         sessionStorage.setItem(WORKOUT_CACHE_KEY, JSON.stringify({ workouts: nextWorkouts, cachedAt: Date.now() } satisfies WorkoutData));
         if (active) { setWorkouts(nextWorkouts); setWorkoutsError(null); }
       } catch (cause) {
-        if (active) setWorkoutsError(cause instanceof Error ? cause.message : "Unable to load workout history");
+        if (active && !hasCachedData) setWorkoutsError(cause instanceof Error ? cause.message : "Unable to load workout history");
       } finally {
         if (active) setWorkoutsLoading(false);
       }
@@ -231,13 +246,16 @@ function PlanView({ routines }: { routines: HevyRoutine[] }) {
     setSaveMessage(null);
     try {
       const nextRoutines = applyRoutineChanges(baseRoutines, appliedChanges);
-      const response = await fetch("/api/hevy/suggested", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ routines: nextRoutines, routineIds: [...new Set(appliedChanges.map((change) => change.routineId))] }) });
-      const data = await readApiResponse<{ error?: string }>(response);
-      if (!response.ok) throw new Error(data.error || "Unable to save My Routines changes");
+      const payload = { routines: nextRoutines, routineIds: [...new Set(appliedChanges.map((change) => change.routineId))] };
+      setBaseRoutines(nextRoutines);
+      const cachedData = JSON.stringify({ routines: nextRoutines, cachedAt: Date.now() } satisfies FitnessData);
+      localStorage.setItem(DATA_CACHE_KEY, cachedData);
+      sessionStorage.setItem(DATA_CACHE_KEY, cachedData);
+      enqueueOfflineMutation("fitness.my-routines", payload);
       localStorage.removeItem(PROPOSAL_STORAGE_KEY);
       setProposalEnvelope(null);
       setIgnoredChanges([]);
-      setSaveMessage("Plan changes saved to Hevy in My Routines.");
+      setSaveMessage(navigator.onLine ? "Saved locally · syncing to Hevy…" : "Saved locally · will sync when you’re online.");
     } catch (cause) {
       setSaveMessage(cause instanceof Error ? cause.message : "Unable to save changes");
     } finally { setSaving(false); }
@@ -252,7 +270,7 @@ function PlanView({ routines }: { routines: HevyRoutine[] }) {
   return <div className="mx-auto max-w-6xl space-y-6">
     <WorkoutBanner routines={baseRoutines} workouts={workouts} loading={workoutsLoading} error={workoutsError}/>
     {libraryError && <p role="status" className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-3 text-sm text-amber-200">Exercise media is unavailable right now. Your plan and targets are still shown.</p>}
-    <div className="grid gap-8 lg:grid-cols-2 lg:items-start">{previewRoutines.map((routine, index) => { const routineChanges = proposalChanges.filter((change) => change.routineId === routine.id); const removedChanges = routineChanges.filter((change) => change.action === "remove"); return <section key={routine.id} className="space-y-5 border-t border-[var(--border)] pt-6 first:border-t-0 first:pt-0 lg:border-t-0 lg:pt-0"><details open><summary className="flex min-h-24 cursor-pointer list-none items-start gap-3 pt-5 [&::-webkit-details-marker]:hidden"><span className="grid size-8 shrink-0 place-items-center rounded-lg text-xs font-bold text-[#17121f]" style={{ background: tone[routine.title] || "#a78bfa" }}>{index + 1}</span><div className="min-w-0 flex-1"><h3 className="text-lg font-semibold">{routine.title}</h3><span className="mt-0.5 block truncate text-xs text-[var(--muted-foreground)]">{routine.exercises.length} exercises · {setsCount(routine)} sets{routine.notes ? ` · ${routine.notes}` : ""}</span><RoutineChangeSummary changes={routineChanges} ignoredChanges={ignoredChanges}/></div><ChevronDown className="mt-1 size-4 shrink-0 text-[var(--muted-foreground)]"/></summary><div className="space-y-8 pt-5">{routine.exercises.map((exercise, exerciseIndex) => { const change = routineChanges.find((item) => item.id === exercise.preview_change_id); return <PlanExercise key={`${routine.id}-${exercise.exercise_template_id}-${exerciseIndex}`} exercise={exercise} currentExercise={change?.currentExercise} index={exerciseIndex} detail={findExerciseDetails(exercise, library)} libraryLoading={libraryLoading} experiment change={change ? changeType(change.action) : "normal"} ignored={Boolean(change && ignoredChanges.includes(change.id))} onToggleIgnore={change ? () => toggleIgnoredChange(change.id) : undefined}/>; })}{removedChanges.map((change) => <PlanExercise key={change.id} exercise={change.currentExercise!} index={change.exerciseIndex} detail={findExerciseDetails(change.currentExercise!, library)} libraryLoading={libraryLoading} experiment change="delete" ignored={ignoredChanges.includes(change.id)} onToggleIgnore={() => toggleIgnoredChange(change.id)}/>)}</div></details></section>; })}</div>
+    <div className="grid gap-8 lg:grid-cols-2 lg:items-start">{previewRoutines.map((routine, index) => { const routineChanges = proposalChanges.filter((change) => change.routineId === routine.id); const removedChanges = routineChanges.filter((change) => change.action === "remove"); return <section key={routine.id} className="space-y-5 border-t border-[var(--border)] pt-6 first:border-t-0 first:pt-0 lg:border-t-0 lg:pt-0"><details open><summary className="flex min-h-24 cursor-pointer list-none items-start gap-3 pt-5 [&::-webkit-details-marker]:hidden"><span className="grid size-8 shrink-0 place-items-center rounded-lg text-xs font-bold text-[var(--background)]" style={{ background: tone[routine.title] || "var(--ring)" }}>{index + 1}</span><div className="min-w-0 flex-1"><h3 className="text-lg font-semibold">{routine.title}</h3><span className="mt-0.5 block truncate text-xs text-[var(--muted-foreground)]">{routine.exercises.length} exercises · {setsCount(routine)} sets{routine.notes ? ` · ${routine.notes}` : ""}</span><RoutineChangeSummary changes={routineChanges} ignoredChanges={ignoredChanges}/></div><ChevronDown className="mt-1 size-4 shrink-0 text-[var(--muted-foreground)]"/></summary><div className="space-y-8 pt-5">{routine.exercises.map((exercise, exerciseIndex) => { const change = routineChanges.find((item) => item.id === exercise.preview_change_id); return <PlanExercise key={`${routine.id}-${exercise.exercise_template_id}-${exerciseIndex}`} exercise={exercise} currentExercise={change?.currentExercise} index={exerciseIndex} detail={findExerciseDetails(exercise, library)} libraryLoading={libraryLoading} experiment change={change ? changeType(change.action) : "normal"} ignored={Boolean(change && ignoredChanges.includes(change.id))} onToggleIgnore={change ? () => toggleIgnoredChange(change.id) : undefined}/>; })}{removedChanges.map((change) => <PlanExercise key={change.id} exercise={change.currentExercise!} index={change.exerciseIndex} detail={findExerciseDetails(change.currentExercise!, library)} libraryLoading={libraryLoading} experiment change="delete" ignored={ignoredChanges.includes(change.id)} onToggleIgnore={() => toggleIgnoredChange(change.id)}/>)}</div></details></section>; })}</div>
     {(proposal || saveMessage) && <div className="border-t border-[var(--border)] pb-24 pt-6 sm:pb-0"><div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"><div className="min-w-0 flex-1">{saveMessage && <p role="status" className="text-sm text-[var(--muted-foreground)]">{saveMessage}</p>}{proposal && <div aria-live="polite"><p className="text-xs font-semibold uppercase tracking-[.14em] text-[var(--muted-foreground)]">Changes to review</p><p className="mt-1 text-sm font-semibold leading-6 text-[var(--foreground)]">{changeCount > 0 ? changeBreakdown(changeSummary) : "No changes selected"}</p><p className="mt-0.5 text-sm leading-6 text-[var(--muted-foreground)]">{changeCount > 0 ? "Review the highlighted exercises before saving to My Routines." : "Select at least one change to continue."}</p></div>}</div>{proposal && <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto"><Button variant="outline" disabled={saving} onClick={cancelChanges} className="min-h-12 w-full px-4 text-base sm:w-auto sm:px-6">Cancel</Button><Button disabled={saving || changeCount === 0} onClick={() => void acceptChanges()} className="min-h-12 w-full px-4 text-base sm:w-auto sm:px-6">{saving ? "Saving…" : "Save changes"}</Button></div>}</div></div>}
   </div>;
 }
@@ -280,11 +298,11 @@ function WorkoutBanner({ routines, workouts, loading, error }: { routines: HevyR
     });
     return { date, workout };
   });
-  return <section className="overflow-hidden rounded-3xl border border-[#3d3158] bg-[radial-gradient(circle_at_82%_10%,rgba(167,139,250,.2),transparent_34%),linear-gradient(135deg,#211a30,#15121d)] p-6 md:p-8"><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><p className="eyebrow">CURRENT PLAN</p><h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-[-.045em] md:text-5xl">Train with intent.<br/><span className="text-[#a99fba]">Follow your plan.</span></h2><p className="mt-4 max-w-xl text-sm leading-6 text-[#aaa3b5]">Your live ULPPL rhythm, pulled from Hevy.</p></div><div className="min-w-0 text-left md:text-right"><div className="flex justify-start gap-1.5 sm:gap-2 md:justify-end">{recentDays.map(({ date, workout }) => <div key={localDateKey(date)} title={workout ? `${workout.title} logged` : "No workout logged"} aria-label={`${date.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })}: ${workout ? `${workout.title} logged` : "no workout"}`} className={`grid size-10 place-items-center rounded-full text-center transition-colors sm:size-12 ${workout ? "bg-fuchsia-200 text-[#2b173e]" : "bg-white/10 text-white/55"}`}><span><span className="block text-[8px] font-bold uppercase tracking-[.08em] sm:text-[9px]">{date.toLocaleDateString(undefined, { weekday: "short" })}</span><span className="block text-xs font-semibold sm:text-sm">{date.getDate()}</span></span></div>)}</div>{loading && <p className="mt-2 text-[11px] text-white/50">Checking Hevy…</p>}{!loading && error && <p className="mt-2 text-[11px] text-amber-100/80">Workout history unavailable</p>}<div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3"><div className="min-w-0 rounded-2xl border border-white/10 bg-white/[.04] p-2 text-left sm:min-w-24 sm:p-4"><div className="flex items-center gap-1 text-fuchsia-100/65"><Dumbbell className="size-4 shrink-0"/><span className="whitespace-nowrap text-[9px] font-bold uppercase leading-4 tracking-[.08em] sm:text-[10px] sm:tracking-[.12em]">NEXT</span></div><strong className="mt-2 block break-words text-center text-lg font-semibold sm:mt-3 sm:text-left sm:text-2xl">{loading ? "Loading…" : nextTitle}</strong></div><div className="min-w-0 rounded-2xl border border-white/10 bg-white/[.04] p-2 text-left sm:min-w-24 sm:p-4"><span className="block whitespace-nowrap text-[9px] font-bold uppercase leading-4 tracking-[.08em] text-fuchsia-100/65 sm:text-[10px] sm:tracking-[.12em]">EX. COUNT</span><strong className="mt-2 block text-center text-lg font-semibold sm:mt-3 sm:text-left sm:text-2xl">{routines.reduce((sum, routine) => sum + routine.exercises.length, 0)}</strong></div><div className="min-w-0 rounded-2xl border border-white/10 bg-white/[.04] p-2 text-left sm:min-w-24 sm:p-4"><div className="flex items-center gap-1 text-fuchsia-100/65"><CalendarDays className="size-4 shrink-0"/><span className="whitespace-nowrap text-[9px] font-bold uppercase leading-4 tracking-[.08em] sm:text-[10px] sm:tracking-[.12em]">LAST W.O</span></div><strong className="mt-2 block text-center text-lg font-semibold sm:mt-3 sm:text-left sm:text-2xl">{loading || !lastWorkoutDate ? "—" : daysSince(lastWorkoutDate)}</strong></div></div></div></div></section>;
+  return <section className="overflow-hidden rounded-3xl border border-[var(--border)] bg-[radial-gradient(circle_at_82%_10%,rgba(167,139,250,.2),transparent_34%),linear-gradient(135deg,var(--card),var(--card))] p-6 md:p-8"><div className="flex flex-col justify-between gap-6 md:flex-row md:items-end"><div><p className="eyebrow">CURRENT PLAN</p><h2 className="mt-2 max-w-2xl text-3xl font-semibold tracking-[-.045em] md:text-5xl">Train with intent.<br/><span className="text-[var(--muted-foreground)]">Follow your plan.</span></h2><p className="mt-4 max-w-xl text-sm leading-6 text-[var(--muted-foreground)]">Your live ULPPL rhythm, pulled from Hevy.</p></div><div className="min-w-0 text-left md:text-right"><div className="flex justify-start gap-1.5 sm:gap-2 md:justify-end">{recentDays.map(({ date, workout }) => <div key={localDateKey(date)} title={workout ? `${workout.title} logged` : "No workout logged"} aria-label={`${date.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "short" })}: ${workout ? `${workout.title} logged` : "no workout"}`} className={`grid size-10 place-items-center rounded-full text-center transition-colors sm:size-12 ${workout ? "bg-fuchsia-200 text-[var(--card)]" : "bg-white/10 text-white/55"}`}><span><span className="block text-[8px] font-bold uppercase tracking-[.08em] sm:text-[9px]">{date.toLocaleDateString(undefined, { weekday: "short" })}</span><span className="block text-xs font-semibold sm:text-sm">{date.getDate()}</span></span></div>)}</div>{loading && <p className="mt-2 text-[11px] text-white/50">Checking Hevy…</p>}{!loading && error && <p className="mt-2 text-[11px] text-amber-100/80">Workout history unavailable</p>}<div className="mt-5 grid grid-cols-3 gap-2 sm:gap-3"><div className="min-w-0 rounded-2xl border border-white/10 bg-white/[.04] p-2 text-left sm:min-w-24 sm:p-4"><div className="flex items-center gap-1 text-fuchsia-100/65"><Dumbbell className="size-4 shrink-0"/><span className="whitespace-nowrap text-[9px] font-bold uppercase leading-4 tracking-[.08em] sm:text-[10px] sm:tracking-[.12em]">NEXT</span></div><strong className="mt-2 block break-words text-center text-lg font-semibold sm:mt-3 sm:text-left sm:text-2xl">{loading ? "Loading…" : nextTitle}</strong></div><div className="min-w-0 rounded-2xl border border-white/10 bg-white/[.04] p-2 text-left sm:min-w-24 sm:p-4"><span className="block whitespace-nowrap text-[9px] font-bold uppercase leading-4 tracking-[.08em] text-fuchsia-100/65 sm:text-[10px] sm:tracking-[.12em]">EX. COUNT</span><strong className="mt-2 block text-center text-lg font-semibold sm:mt-3 sm:text-left sm:text-2xl">{routines.reduce((sum, routine) => sum + routine.exercises.length, 0)}</strong></div><div className="min-w-0 rounded-2xl border border-white/10 bg-white/[.04] p-2 text-left sm:min-w-24 sm:p-4"><div className="flex items-center gap-1 text-fuchsia-100/65"><CalendarDays className="size-4 shrink-0"/><span className="whitespace-nowrap text-[9px] font-bold uppercase leading-4 tracking-[.08em] sm:text-[10px] sm:tracking-[.12em]">LAST W.O</span></div><strong className="mt-2 block text-center text-lg font-semibold sm:mt-3 sm:text-left sm:text-2xl">{loading || !lastWorkoutDate ? "—" : daysSince(lastWorkoutDate)}</strong></div></div></div></div></section>;
 }
 
 function ExerciseMedia({ exercise, detail, libraryLoading }: { exercise: HevyExercise; detail?: FitnessExercise; libraryLoading: boolean }) {
-  return <div className="relative aspect-square self-start overflow-hidden rounded-lg bg-[#17121f] ring-1 ring-inset ring-white/15">
+  return <div className="relative aspect-square self-start overflow-hidden rounded-lg bg-[var(--background)] ring-1 ring-inset ring-white/15">
     {detail?.videoUrl ? <VideoPreview key={detail.videoUrl} src={exerciseVideoUrl(detail.videoUrl)!} poster={detail.imageUrl} label={exercise.title} /> : detail?.imageUrl ? <img src={detail.imageUrl} alt={`${exercise.title} demonstration`} className="size-full object-cover" /> : <div className="grid size-full place-items-center text-center text-sm text-white/50"><div><Video className="mx-auto mb-2 size-8"/><span>{libraryLoading ? "Loading demonstration…" : "No demonstration available"}</span></div></div>}
   </div>;
 }
@@ -298,7 +316,7 @@ function ExperimentStatsExercise({ exercise, currentExercise, detail, libraryLoa
   const isDelete = change === "delete";
   const isAdd = change === "add";
   const current = isAdd ? currentExercise : currentExercise || exercise;
-  return <div role="group" aria-label={`${exercise.title} ${change}`} className={`grid grid-cols-[minmax(104px,32%)_1fr] items-start gap-3 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#3b3a45,#1a1921)] p-3 shadow-[0_12px_30px_rgba(20,20,28,.28)] sm:grid-cols-[minmax(136px,26%)_1fr] sm:gap-5 ${isDelete ? "opacity-90" : ""}`}><div className={isDelete ? "opacity-55" : ""}><ExerciseMedia exercise={exercise} detail={detail} libraryLoading={libraryLoading}/></div><div className="relative min-w-0"><div className="flex items-start gap-2 pr-14"><div className="min-w-0"><h3 className={`min-h-10 line-clamp-2 text-sm font-semibold leading-5 ${isDelete ? "line-through decoration-rose-300/80" : ""} ${isAdd ? "text-emerald-300" : ""}`}>{exercise.title}</h3></div></div><div className="absolute right-0 top-0">{(isModify || isDelete || isAdd) && onToggleIgnore && <label className={`grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl transition-colors ${ignored ? "bg-white/15 text-white" : "bg-black/20 text-white/65 hover:bg-white/15 hover:text-white"}`} title={ignored ? "Include change" : "Exclude change"}><input type="checkbox" checked={!ignored} onChange={onToggleIgnore} aria-label={ignored ? "Include change" : "Exclude change"} className="size-5 accent-[var(--ring)]"/></label>}</div><p className="mt-1 truncate pr-14 text-xs text-white/60">{detail?.muscles.slice(0, 3).join(" · ") || "Chest · Triceps"}</p><div className={`mt-3 border-t border-white/15 pt-2 ${isModify || isAdd ? "grid grid-cols-2 gap-x-3" : ""}`}><div><span className="block text-[10px] text-white/55">CURRENT</span><strong className="block truncate text-xs font-medium text-white/85">{current ? formatSetCountTarget(current.sets) : "—"}</strong></div>{(isModify || isAdd) && <div><span className="block text-[10px] text-white/65">PROPOSED</span><strong className="block truncate text-xs font-semibold text-emerald-300/90">{isAdd ? formatSetCountTarget(exercise.sets) : formatSetCountTarget(exercise.sets)}</strong></div>}</div></div></div>;
+  return <div role="group" aria-label={`${exercise.title} ${change}`} className={`grid grid-cols-[minmax(104px,32%)_1fr] items-start gap-3 overflow-hidden rounded-2xl bg-[linear-gradient(135deg,var(--card),var(--background))] p-3 shadow-[0_12px_30px_rgba(20,20,28,.28)] sm:grid-cols-[minmax(136px,26%)_1fr] sm:gap-5 ${isDelete ? "opacity-90" : ""}`}><div className={isDelete ? "opacity-55" : ""}><ExerciseMedia exercise={exercise} detail={detail} libraryLoading={libraryLoading}/></div><div className="relative min-w-0"><div className="flex items-start gap-2 pr-14"><div className="min-w-0"><h3 className={`min-h-10 line-clamp-2 text-sm font-semibold leading-5 ${isDelete ? "line-through decoration-rose-300/80" : ""} ${isAdd ? "text-emerald-300" : ""}`}>{exercise.title}</h3></div></div><div className="absolute right-0 top-0">{(isModify || isDelete || isAdd) && onToggleIgnore && <label className={`grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl transition-colors ${ignored ? "bg-white/15 text-white" : "bg-black/20 text-white/65 hover:bg-white/15 hover:text-white"}`} title={ignored ? "Include change" : "Exclude change"}><Checkbox type="checkbox" checked={!ignored} onChange={onToggleIgnore} aria-label={ignored ? "Include change" : "Exclude change"} className="size-5 accent-[var(--ring)]"/></label>}</div><p className="mt-1 truncate pr-14 text-xs text-white/60">{detail?.muscles.slice(0, 3).join(" · ") || "Chest · Triceps"}</p><div className={`mt-3 border-t border-white/15 pt-2 ${isModify || isAdd ? "grid grid-cols-2 gap-x-3" : ""}`}><div><span className="block text-[10px] text-white/55">CURRENT</span><strong className="block truncate text-xs font-medium text-white/85">{current ? formatSetCountTarget(current.sets) : "—"}</strong></div>{(isModify || isAdd) && <div><span className="block text-[10px] text-white/65">PROPOSED</span><strong className="block truncate text-xs font-semibold text-emerald-300/90">{isAdd ? formatSetCountTarget(exercise.sets) : formatSetCountTarget(exercise.sets)}</strong></div>}</div></div></div>;
 }
 
 function PlanExercise({ exercise, currentExercise, detail, libraryLoading, experiment = false, change = "normal", ignored = false, onToggleIgnore }: { exercise: HevyExercise; currentExercise?: HevyExercise; index?: number; detail?: FitnessExercise; libraryLoading: boolean; experiment?: boolean; change?: ExperimentChange; ignored?: boolean; onToggleIgnore?: () => void }) {

@@ -54,3 +54,4 @@ export { MorningManifesto } from "./morning-manifesto";
 export { GoalsDemo } from "./goals-demo";
 
 export { MonthlyReports } from "./monthly-reports";
+export { Page, PageHeader, PageSection, MetricCard } from "./page-patterns";
