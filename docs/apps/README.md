@@ -2,16 +2,14 @@
 
 ```text
 apps/
+├── home/
 ├── fitness/
 ├── finance/
 ├── hustle/
-│   ├── experimenter/
-│   ├── analytics/
-│   ├── ads/
-│   └── creative/
 ├── goals/
 ├── time/
-└── films/
+├── admin/
+└── template/
 ```
 
 Each product is a small Next.js app with thin `app/` routes, product composition, and its `app.manifest.json`. Reuse platform capabilities for data access, branding, and components. All new components belong in `platform/` by default; creating an app-local component requires explicit user permission and it must be specific to that app. See the root [AGENTS.md](../../AGENTS.md).

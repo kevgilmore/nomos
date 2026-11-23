@@ -8,3 +8,20 @@ html, body {
 body {
   min-height: 100dvh;
 }
+
+/*
+ * Every app route enters the shell through this frame. Keep the geometry here
+ * so a page cannot quietly invent a second container or a different rhythm.
+ * The desktop assistant is an overlay, so reserve a small, intentional amount
+ * of extra space on the right without changing the frame's shell-relative left
+ * gutter.
+ */
+:root {
+  --nomos-frame-agent-clearance: 1rem;
+}
+
+main#main-content { padding-top: 2.75rem; }
+
+@media (min-width: 1280px) {
+  .nomos-content-frame { padding-right: calc(2rem + var(--nomos-frame-agent-clearance)); }
+}

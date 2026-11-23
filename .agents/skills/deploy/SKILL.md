@@ -28,6 +28,10 @@ Before publishing:
 6. After deployment, verify each changed custom domain with an HTTP request and
    confirm the response is from the deployed app, not a Firebase error page.
 
+For static product apps, verify the root URL resolves to the first navigation
+route. Firebase must have an explicit 302 root redirect because an exported
+Next.js `redirect()` is only a client-side fallback when served as static HTML.
+
 Never report success from a completed build alone. Report deployment success
 only after Firebase reports a successful deploy and the changed public URL(s)
 respond successfully. If deployment fails, preserve the diagnostic output,

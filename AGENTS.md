@@ -17,13 +17,22 @@ through `@nomos/*`; platform packages never import apps.
 
 ## UI platform contract
 
-Agents compose UI; they do not redesign it per page. Use `platform/ui`,
-`platform/layout`, and `platform/patterns`. If a needed primitive or pattern is
-missing, add it to the platform first.
+Agents compose UI; they do not redesign it per page. Use `platform/ui` through
+`@nomos/ui`; its exports currently provide the primitive, layout, and page
+pattern layers. If a needed primitive or pattern is missing, add it to the
+platform first.
 
 - Use `@nomos/ui` controls and patterns: `Page`, `PageHeader`, `PageSection`,
   `PageGrid`, `ListPage`, `DetailPage`, `FormPage`, `DashboardPage`,
-  `SettingsPage`, `MetricCard`, tables, dialogs, toasts, and the shared shell.
+  `SettingsPage`, `MetricCard`, `Tabs`, `TabsList`, `TabsTrigger`,
+  `TabsContent`, tables, dialogs, toasts, and the shared shell.
+- All page-level tabs use the shared `Tabs` primitives. Do not create a local
+  tab strip from buttons, links, borders, or page-specific active-state CSS.
+  If the required tab behavior or visual variant is missing, extend the
+  platform tabs component first and add platform-level coverage.
+- When a page has filters or actions alongside tabs, use one responsive toolbar
+  row: tabs own the left side, actions own the right side, and the platform
+  border/gap is shared. Do not stack unrelated controls with ad hoc margins.
 - No raw controls, page-local UI primitives, hard-coded colors, arbitrary
   Tailwind values, random radii, page-specific spacing systems, or local
   responsive/theme logic.
@@ -38,6 +47,32 @@ missing, add it to the platform first.
 - User mutations must be optimistic and durable: update local state first,
   enqueue the server mutation through `@nomos/data/offline`, retry when online,
   and define an explicit conflict or rollback rule for every syncable resource.
+
+### Page frame and responsive contract
+
+- The shell title is the product identity and the left navigation identifies the
+  current page. Do not repeat a navigation label as an app-level `<h1>`.
+- The browser document title is always the app name, on every route. Set it once
+  in the app's root `app/layout.tsx`; route files must not export metadata or
+  `generateMetadata`, and layouts must not use title templates or page-name
+  suffixes.
+- Every app route must use `PageFrame` from `@nomos/ui` as its root content
+  frame. It provides the shared full-width canvas, stable shell-relative
+  gutters, spacing, min-width, and overflow contract. Do not add a competing
+  root `max-w-*`, page padding, or container. The frame must grow with the
+  available shell width; a desktop max-width must not create a breakpoint jump.
+- Use `PageHeader` only for meaningful contextual headings or actions; it is
+  optional and is not a substitute for shell navigation.
+- Layouts must work at iPhone 390px, iPad 768px/1024px, and desktop 1440px.
+  Grids reflow, long labels wrap, tables scroll inside platform primitives, and
+  no page may create horizontal document overflow.
+- The shell alone owns safe areas, viewport height, global scrolling,
+  navigation placement, and document surfaces.
+- The shared desktop content rhythm uses the standard 44px top inset and a
+  full-width canvas with stable shell-relative gutters. At desktop widths,
+  reserve the platform's small right-side clearance for the fixed AI agent; do
+  not add page-specific right padding. Pages must not compensate with their own
+  top-level margin or padding.
 
 ## Mandatory implementation loop
 

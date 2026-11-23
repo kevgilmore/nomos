@@ -30,5 +30,11 @@ export default defineConfig({
       reuseExistingServer: true,
       timeout: 120_000,
     },
+    {
+      command: "pnpm --filter @nomos/hustle dev --hostname 0.0.0.0 --port 3009",
+      url: "http://127.0.0.1:3009/",
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
   ],
 });

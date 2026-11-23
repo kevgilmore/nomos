@@ -3,7 +3,7 @@
     {
       "source": "platform/functions",
       "codebase": "shared",
-      "runtime": "nodejs20",
+      "runtime": "nodejs22",
       "predeploy": [
         "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
@@ -11,7 +11,7 @@
     {
       "source": "apps/fitness/functions",
       "codebase": "fitness",
-      "runtime": "nodejs20",
+      "runtime": "nodejs22",
       "predeploy": [
         "npm --prefix \"$RESOURCE_DIR\" run build"
       ]
@@ -150,6 +150,13 @@
         "**/.*",
         "**/node_modules/**"
       ],
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "/progress/",
+          "type": 302
+        }
+      ],
       "headers": [
         {
           "source": "**/*.html",
@@ -277,6 +284,13 @@
         "**/.*",
         "**/node_modules/**"
       ],
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "/horizon/",
+          "type": 302
+        }
+      ],
       "rewrites": [
         {
           "source": "/api/ai/**",
@@ -310,6 +324,13 @@
         "firebase.json",
         "**/.*",
         "**/node_modules/**"
+      ],
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "/today/",
+          "type": 302
+        }
       ],
       "rewrites": [
         {
@@ -345,6 +366,13 @@
         "**/.*",
         "**/node_modules/**"
       ],
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "/breakdown/",
+          "type": 302
+        }
+      ],
       "rewrites": [
         {
           "source": "/api/ai/**",
@@ -379,6 +407,13 @@
         "**/.*",
         "**/node_modules/**"
       ],
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "/overview/",
+          "type": 302
+        }
+      ],
       "rewrites": [
         {
           "source": "/api/ai/**",
@@ -405,6 +440,13 @@
         "firebase.json",
         "**/.*",
         "**/node_modules/**"
+      ],
+      "redirects": [
+        {
+          "source": "/",
+          "destination": "/pulse/",
+          "type": 302
+        }
       ],
       "rewrites": [
         {

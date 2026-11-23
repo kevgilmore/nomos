@@ -18,3 +18,23 @@ The app generator is at `.agents/skills/new-app`. Shared UI remains in `platform
 - App discovery: edit `app.manifest.json` and run `pnpm sync:apps`.
 
 The old copied-base model is not used. New apps do not receive future platform changes by copying files; they receive them through workspace package imports.
+
+## Data and interaction contract
+
+New apps should be usable before their non-critical network reads finish.
+Render cached data when available, revalidate in the background, and use
+`@nomos/data/offline` for optimistic mutations that must survive a reload or
+temporary loss of connectivity. Each syncable resource documents its retry,
+conflict, and rollback behavior. Do not add an app-specific queue.
+
+An app may intentionally use browser-local data when its product contract is
+local-only. In that case, document the storage key, scope, persistence rules,
+and the fact that it is not synchronized to a backend.
+
+## Verification
+
+Every app feature adds permanent regression coverage. Use Playwright for
+navigation, rendered interactions, responsive behavior, and themes. Run the
+affected app build plus `pnpm typecheck`, `pnpm lint:ui-policy`, and the
+relevant browser suite. Completion requires independent verification, not just
+successful compilation.

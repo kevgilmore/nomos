@@ -71,6 +71,21 @@ async function validateHostingConfig() {
   if (fitness.cleanUrls !== false) throw new Error("Production deploy check failed: Fitness Hosting cleanUrls must be false");
   if (fitness.trailingSlash !== true) throw new Error("Production deploy check failed: Fitness Hosting trailingSlash must be true");
   if (fitness.rewrites?.some((rewrite) => rewrite.source === "**")) throw new Error("Production deploy check failed: Fitness Hosting must not have a catch-all rewrite");
+  const productRootRoutes = {
+    fitness: "/progress/",
+    finance: "/horizon/",
+    goals: "/today/",
+    time: "/breakdown/",
+    admin: "/overview/",
+    hustle: "/pulse/",
+  };
+  for (const [target, destination] of Object.entries(productRootRoutes)) {
+    const site = config.hosting?.find((entry) => entry.target === target);
+    const redirect = site?.redirects?.find((entry) => entry.source === "/");
+    if (!redirect || redirect.destination !== destination || redirect.type !== 302) {
+      throw new Error(`Production deploy check failed: Hosting target '${target}' must redirect '/' to '${destination}' with a 302`);
+    }
+  }
 }
 
 await run(packageManager.command, [...packageManager.prefix, "--filter", "@nomos/home", "build"]);

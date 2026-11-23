@@ -1,7 +1,7 @@
 {
   "name": "nomos-functions",
   "private": true,
-  "engines": { "node": "20" },
+  "engines": { "node": "22" },
   "main": "lib/index.js",
   "exports": { ".": "./lib/index.js", "./auth": "./lib/auth.js" },
   "scripts": { "build": "node scripts/sync-db.mjs && tsc", "deploy": "npm run build && firebase deploy --only functions:shared" },

@@ -4,7 +4,7 @@ import { Figtree } from "next/font/google";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sign in · Nomos ID",
+  title: "Nomos ID",
   description: "Local Nomos identity proof of concept.",
   icons: { icon: "/nomos-mark.png", apple: "/nomos-mark.png" },
 };

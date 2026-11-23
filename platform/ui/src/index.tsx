@@ -33,6 +33,7 @@ export const DropdownMenuLabel=({className,...props}:React.ComponentPropsWithout
 export const DropdownMenuSeparator=({className,...props}:React.ComponentPropsWithoutRef<typeof DropdownPrimitive.Separator>)=><DropdownPrimitive.Separator className={cn("my-1 h-px bg-[var(--border)]",className)} {...props}/>;
 export { NomosShell, type ShellApp, type ShellNavItem, type ShellUser } from "./nomos-shell";
 export { SectionTabs, type SectionTab } from "./section-tabs";
+export { Tabs, TabsContent, TabsList, TabsTrigger } from "./tabs";
 export { AssistantPanel } from "./assistant-panel";
 export { NomosLogo } from "./nomos-logo";
 export { NOMOS_APPS } from "./nomos-apps";
@@ -54,4 +55,4 @@ export { MorningManifesto } from "./morning-manifesto";
 export { GoalsDemo } from "./goals-demo";
 
 export { MonthlyReports } from "./monthly-reports";
-export { Page, PageHeader, PageSection, MetricCard } from "./page-patterns";
+export { Page, PageFrame, PageHeader, PageSection, MetricCard } from "./page-patterns";

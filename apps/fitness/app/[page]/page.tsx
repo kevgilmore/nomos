@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { PageFrame } from "@nomos/ui";
 import { ExerciseLibrary } from "@/components/exercise-library";
 import { FitnessPlan } from "@/components/fitness-plan";
 import { DietPage } from "@/components/diet-page";
@@ -16,5 +17,5 @@ export default async function FitnessPage({ params }: { params: Promise<{ page: 
   if (!page) notFound();
   const routines: HevyRoutine[] = [];
   const error: string | null = null;
-  return pageSlug === "exercises" ? <ExerciseLibrary /> : pageSlug === "diet" ? <DietPage /> : pageSlug === "progress" ? <ProgressPage /> : <FitnessPlan initialRoutines={routines} initialError={error} />;
+  return <PageFrame>{pageSlug === "exercises" ? <ExerciseLibrary /> : pageSlug === "diet" ? <DietPage /> : pageSlug === "progress" ? <ProgressPage /> : <FitnessPlan initialRoutines={routines} initialError={error} />}</PageFrame>;
 }

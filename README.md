@@ -74,6 +74,6 @@ through `id.nomos.codes`; configure the Functions parameter
 deploy the shared auth function after changing the domain. Other app links stay
 on localhost in development, while production continues to use `*.nomos.codes`.
 
-Read [docs/architecture](docs/architecture/README.md), [docs/platform](docs/platform/README.md), and [docs/apps](docs/apps/README.md) for the working conventions.
+Read [docs/architecture](docs/architecture/README.md), [docs/platform](docs/platform/README.md), and [docs/apps](docs/apps/README.md) for the working conventions. Codex uses `AGENTS.md`; Claude Code uses `CLAUDE.md`, which points to the same policy and repository skills.
 
 The separate `simplysent/` repository is intentionally not part of this refactor.

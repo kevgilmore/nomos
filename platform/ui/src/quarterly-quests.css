@@ -1,4 +1,6 @@
 .quests-page { --quest-main:#7050ac; --quest-maintenance:#237566; --quest-side:#9a631d; }
+.quests-page, .manifesto-page, .report-feed { width:100%; max-width:none; margin-inline:0; min-width:0; }
+.manifesto-toolbar > div:first-child, .report-feed > header:first-child { display:none; }
 .dark .quests-page { --quest-main:#c2a5f4; --quest-maintenance:#82cfb7; --quest-side:#eac183; }
 .quest-main { --quest-color:var(--quest-main); }
 .quest-maintenance { --quest-color:var(--quest-maintenance); }

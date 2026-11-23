@@ -49,6 +49,15 @@ The deploy command always sets `NEXT_PUBLIC_NOMOS_ENV=production`, builds all re
 checks Fitness HTML and client-navigation payloads, validates the Firebase
 Hosting config, and then deploys all Hosting targets plus Functions.
 
+## Product root routes
+
+Static Firebase Hosting serves the exported `/index.html` directly, so a Next.js
+`redirect("/first-page/")` alone is not sufficient for an app root. Every app
+with a left navigation must also declare a Firebase Hosting 302 redirect from
+`/` to its first navigation route. The production build validation rejects a
+missing or incorrect root redirect. Keep the local Next.js redirect as the
+development fallback.
+
 ## Fitness API routes
 
 Fitness is statically exported for Firebase Hosting. Its Next.js route handlers

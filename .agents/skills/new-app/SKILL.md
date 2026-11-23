@@ -16,15 +16,33 @@ The generated app belongs under `apps/<slug>`. Keep it lean: routes and product 
 
 UI is platform-only by default. Compose every screen from `@nomos/ui` primitives and page patterns (`Page`, `PageHeader`, `PageSection`, `MetricCard`, and the shared shell). Do not add raw buttons, inputs, selects, textareas, hard-coded colors, arbitrary Tailwind values, app-local shells, or page-specific theme tokens. If a reusable pattern is missing, add it to `platform/ui` before implementing the app feature. Run `pnpm lint`, `pnpm typecheck`, and the affected app build before finishing.
 
+Every route renders inside `PageFrame` from `@nomos/ui`. It provides the shared
+full-width canvas and stable responsive gutters and is the single app
+content-width contract; do not add a second root container, custom page padding,
+max-width cap, or repeat the shell/navigation label as an `<h1>`. The frame must
+grow with the shell instead of introducing a desktop max-width breakpoint that
+changes the left gutter. Validate routes at 390px,
+768px, 1024px, and 1440px with no horizontal overflow, including light/dark
+themes and safe-area content clearance.
+
+Set the browser document title once in the root `app/layout.tsx` to the app name.
+Do not add route-level `metadata` or `generateMetadata`, title templates, or
+page/brand suffixes; every route must keep the same app-name tab title.
+
+Use `Tabs`, `TabsList`, `TabsTrigger`, and `TabsContent` for all interactive
+page tabs. Never create a page-local tab strip with buttons, links, borders, or
+custom active-state styles; improve the platform component when a shared
+variant is missing.
+
 Every new app must follow this sequence:
 
 1. Use the generated `NomosProductShell`; do not create a competing shell.
 2. Build the first screen with `Page`, `PageHeader`, `PageSection`, and an
    existing page pattern rather than blank JSX.
 3. Use only exported `@nomos/ui` controls and semantic theme tokens.
-4. Put reusable UI in `platform/ui`, `platform/layout`, or `platform/patterns`.
-   App-local components require explicit justification because the default is
-   platform ownership.
+4. Put reusable UI in `platform/ui` (the current package containing the shared
+   primitive, layout, and page-pattern exports). App-local components require
+   explicit justification because the default is platform ownership.
 5. Add the app's important states—loading, empty, error, mobile, light theme,
    and dark theme—using platform components.
 6. Add or extend the shared Playwright visual matrix for desktop/mobile ×
